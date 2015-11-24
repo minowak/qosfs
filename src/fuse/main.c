@@ -305,6 +305,33 @@ struct fuse_operations qosfs_operations =
 
 int main(int argc, char ** argv)
 {
-	fuse_main(argc, argv, &qosfs_operations, NULL);
+	int i, fuse_stat;
+	char * root_dir;
+
+	printf("[QoSFS] Mounting QoSFS ...\n");
+
+	for (i = 1 ; i < argc && (argv[i][0] == '-') ; i++)
+	{
+		if  (i == argc)
+		{
+			return (-1);
+		}
+	}
+
+	root_dir = realpath(argv[i], NULL);
+	printf("[QoSFS] Setting root dir: %s\n", root_dir);
+
+	for(; i < argc ; i++)
+	{
+		argv[i] = argv[i+1];
+	}
+
+	argc--;
+
+	fuse_stat = fuse_main(argc, argv, &qosfs_operations, NULL);
+
+	printf("[QosFS] fuse_main returned %d\n", fuse_stat);
+
+	return fuse_stat;
 }
 

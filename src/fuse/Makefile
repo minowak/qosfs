@@ -1,11 +1,18 @@
 CFLAGS=-Wall -DFUSE_USE_VERSION=29 `pkg-config fuse --cflags`
 LFLAGS=-Wall `pkg-config fuse --libs`
+CC=gcc
+SRC=main.c
+OBJ=$(SRC:.c=.o)
+BIN=qosfs
 
-all: bin/qosfs
+all: $(SRC) $(BIN)
 
 clean:
-	rm -rf bin obj
+	rm -rf *.o
 
-bin:
-	mkdir -p bin
+$(BIN): $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LFLAGS)
+
+.c.o:
+	$(CC) -o $@ -c $< $(CFLAGS)
 

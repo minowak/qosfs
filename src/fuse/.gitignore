@@ -30,3 +30,7 @@
 
 # Debug files
 *.dSYM/
+
+# Output file
+qosfs
+

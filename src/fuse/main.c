@@ -346,6 +346,44 @@ int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t o
 }
 
 /**
+ * Truncate a file
+ */
+int qosfs_truncate(const char * path, off_t new_size)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("truncate");
+
+	fullpath(fpath, path);
+	if((result = truncate(fpath, new_size)) < 0)
+	{
+		LOG_ERROR("truncate");
+	}
+
+	return result;
+}
+
+/**
+ * Change the access/modification times of a file
+ */
+int qosfs_utime(const char * path, struct utimbuf * ubuf)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("utime");
+
+	fullpath(fpath, path);
+	if((result = utime(fpath, ubuf)) < 0)
+	{
+		LOG_ERROR("utime");
+	}
+
+	return result;
+}
+
+/**
  * Release directory
  */
 int qosfs_releasedir(const char * path, struct fuse_file_info * ffi)
@@ -431,6 +469,117 @@ int qosfs_release(const char * path, struct fuse_file_info * ffi)
 }
 
 /**
+ * Get FS statistics
+ */
+int qosfs_statfs(const char * path, struct statvfs * statv)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("statfs");
+
+	fullpath(fpath, path);
+	if((result = statvfs(fpath, statv)) < 0)
+	{
+		LOG_ERROR("statfs");
+	}
+
+	return result;
+}
+
+/**
+ * Flush cached data.
+ */
+int qosfs_flush(const char * path, struct fuse_file_info * ffi)
+{
+	return 0;
+}
+
+/**
+ * Synchronize file contents.
+ */
+int qosfs_fsync(const char * path, int datasync, struct fuse_file_info * ffi)
+{
+	int result = 0;
+	
+	if((result = fsync(ffi->fh)) < 0 )
+	{
+		LOG_ERROR("fsync");
+	}
+
+	return result;
+}
+
+/**
+ * Synchronize directory contents.
+ */
+int qosfs_fsyncdir(const char * path, int datasync, struct fuse_file_info * ffi)
+{
+	return 0;
+}
+
+/**
+ * Create and open a file.
+ */
+int qosfs_create(const char * path, mode_t mode, struct fuse_file_info * ffi)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("create");
+
+	fullpath(fpath, path);
+
+	if((result = creat(fpath, mode)) < 0)
+	{
+		LOG_ERROR("create");
+	} 
+	else
+	{
+		ffi->fh = result;
+		return 0;
+	}
+
+	return result;
+}
+
+/**
+ * Change the size of an open file.
+ */
+int qosfs_ftruncate(const char * path, off_t offset, struct fuse_file_info * ffi)
+{
+	int result = 0;
+
+	LOG_CALL("ftruncate");
+
+	if((result = ftruncate(ffi->fh, offset)) < 0)
+	{
+		LOG_ERROR("ftruncate");
+	}
+
+	return result;
+}
+
+/**
+ * Get attributes from an open file.
+ */
+int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_info * ffi)
+{
+	int result = 0;
+
+	LOG_CALL("fgetattr");
+
+	if((result = fstat(ffi->fh, statbuf)) < 0)
+	{
+		LOG_ERROR("fgetattr");
+	}
+
+	return result;
+}
+
+// fgetattr
+
+/**
  * Initialize filesystem.
  */
 void * qosfs_init(struct fuse_conn_info * conn)
@@ -445,6 +594,7 @@ void * qosfs_init(struct fuse_conn_info * conn)
  */
 void qosfs_destroy(void * userdata)
 {
+	syslog(LOG_INFO, "destroy() called");
 }
 
 struct fuse_operations qosfs_operations =
@@ -452,6 +602,7 @@ struct fuse_operations qosfs_operations =
 	.readlink = qosfs_readlink,
 	.getattr = qosfs_getattr,
 	.mknod = qosfs_mknod,
+	.create = qosfs_create,
 	.unlink = qosfs_unlink,
 	.rmdir = qosfs_rmdir,
 	.symlink = qosfs_symlink,
@@ -460,6 +611,14 @@ struct fuse_operations qosfs_operations =
 	.chmod = qosfs_chmod,
 	.chown = qosfs_chown,
 	.access = qosfs_access,
+	.utime = qosfs_utime,
+	.statfs = qosfs_statfs,
+	.flush = qosfs_flush,
+	.truncate = qosfs_truncate,
+	.fsync = qosfs_fsync,
+	.fsyncdir = qosfs_fsyncdir,
+	.fgetattr = qosfs_fgetattr,
+	.ftruncate = qosfs_ftruncate,
 	.getdir = NULL,
 	.mkdir = qosfs_mkdir,
 	.readdir = qosfs_readdir,

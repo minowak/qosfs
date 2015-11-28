@@ -42,7 +42,6 @@ int qosfs_getattr(const char * path, struct stat * statbuf)
 	if((result = lstat(fpath, statbuf)) != 0)
 	{
 		LOG_ERROR("getattr");
-		syslog(LOG_ERR, "result = %d", result);
 	}
 
 	return result;
@@ -271,6 +270,25 @@ int qosfs_chown(const char * path, uid_t uid, gid_t gid)
 }
 
 /**
+ * Check file permissions
+ */
+int qosfs_access(const char * path, int mask)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("access");
+
+	fullpath(fpath, path);
+	if((result = access(fpath, mask)) < 0)
+	{
+		LOG_ERROR("access");
+	}
+
+	return result;
+}
+
+/**
  * Open directory
  */
 int qosfs_opendir(const char * path, struct fuse_file_info * ffi)
@@ -286,9 +304,11 @@ int qosfs_opendir(const char * path, struct fuse_file_info * ffi)
 	if((dp = opendir(fpath)) == NULL)
 	{
 		LOG_ERROR("opendir");
+	} 
+	else
+	{
+		ffi->fh = (uint64_t) dp;
 	}
-
-	ffi->fh = (intptr_t) dp;
 
 	return result;
 }
@@ -305,7 +325,7 @@ int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t o
 
 	LOG_CALL("readdir");
 
-	dp = (DIR *) (uintptr_t) ffi->fh;
+	dp = (DIR *) ffi->fh;
 	de = readdir(dp);
 	if((de = readdir(dp)) == NULL)
 	{
@@ -323,6 +343,17 @@ int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t o
 	} while((de = readdir(dp)) != NULL);
 
 	return result;
+}
+
+/**
+ * Release directory
+ */
+int qosfs_releasedir(const char * path, struct fuse_file_info * ffi)
+{
+	LOG_CALL("releasedir");
+
+	closedir((DIR *) ffi->fh);
+	return 0;
 }
 
 /**
@@ -428,10 +459,12 @@ struct fuse_operations qosfs_operations =
 	.rename = qosfs_rename,
 	.chmod = qosfs_chmod,
 	.chown = qosfs_chown,
+	.access = qosfs_access,
 	.getdir = NULL,
 	.mkdir = qosfs_mkdir,
 	.readdir = qosfs_readdir,
 	.opendir = qosfs_opendir,
+	.releasedir = qosfs_releasedir,
 	.open = qosfs_open,
 	.release = qosfs_release,
 	.read = qosfs_read,

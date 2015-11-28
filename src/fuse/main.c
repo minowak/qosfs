@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <dirent.h>
 
 char * root_dir;
 
@@ -22,6 +23,61 @@ static void fullpath(char fpath[PATH_MAX], const char * path)
 {
 	strcpy(fpath, root_dir);
 	strncat(fpath, path, PATH_MAX);
+}
+
+/**
+ * Open directory
+ */
+int qosfs_opendir(const char * path, struct fuse_file_info * ffi)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+	DIR * dp;
+
+	syslog(LOG_INFO, "opendir() for %s", path);
+
+	fullpath(fpath, path);
+
+	if((dp = opendir(fpath)) == NULL)
+	{
+		syslog(LOG_ERR, "error in opendir() for %s", fpath);
+	}
+
+	ffi->fh = (intptr_t) dp;
+
+	return result;
+}
+
+/**
+ * Read the directory
+ */
+int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t offset, 
+		struct fuse_file_info * ffi)
+{
+	int result = 0;
+	DIR * dp;
+	struct dirent * de;
+
+	syslog(LOG_INFO, "readdir() for %s", path);
+
+	dp = (DIR *) (uintptr_t) ffi->fh;
+	de = readdir(dp);
+	if((de = readdir(dp)) == NULL)
+	{
+		syslog(LOG_ERR, "error in readdir() for %s", path);
+		return result;
+	}
+
+	do
+	{
+		syslog(LOG_INFO, "calling filler %s", de->d_name);
+		if(filler(buf, de->d_name, NULL, 0) != 0)
+		{
+			return -ENOMEM;
+		}
+	} while((de = readdir(dp)) != NULL);
+
+	return result;
 }
 
 /**
@@ -118,6 +174,8 @@ void qosfs_destroy(void * userdata)
 
 struct fuse_operations qosfs_operations =
 {
+	.readdir = qosfs_readdir,
+	.opendir = qosfs_opendir,
 	.open = qosfs_open,
 	.release = qosfs_release,
 	.read = qosfs_read,

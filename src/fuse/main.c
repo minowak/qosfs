@@ -11,17 +11,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-
-/**
- * Writes errors to logfile.
- * @param msg error message
- * @return errno
- */
-static int qosfs_error(char * msg)
-{
-	int result = -errno;
-	return result;
-}
+#include <syslog.h>
 
 /**
  * Get file attributes.
@@ -308,7 +298,8 @@ int main(int argc, char ** argv)
 	int i, fuse_stat;
 	char * root_dir;
 
-	printf("[QoSFS] Mounting QoSFS ...\n");
+	openlog("QoSFS", LOG_PID|LOG_CONS, LOG_USER);
+	syslog(LOG_INFO, "Mounting filesystem.");
 
 	for (i = 1 ; i < argc && (argv[i][0] == '-') ; i++)
 	{
@@ -319,7 +310,7 @@ int main(int argc, char ** argv)
 	}
 
 	root_dir = realpath(argv[i], NULL);
-	printf("[QoSFS] Setting root dir: %s\n", root_dir);
+	syslog(LOG_INFO, "Setting root dir: %s\n", root_dir);
 
 	for(; i < argc ; i++)
 	{
@@ -330,7 +321,9 @@ int main(int argc, char ** argv)
 
 	fuse_stat = fuse_main(argc, argv, &qosfs_operations, NULL);
 
-	printf("[QosFS] fuse_main returned %d\n", fuse_stat);
+	syslog(LOG_INFO, "fuse_main returned %d\n", fuse_stat);
+
+	closelog();
 
 	return fuse_stat;
 }

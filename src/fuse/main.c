@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <syslog.h>
+#include <unistd.h>
 
 char * root_dir;
 
@@ -24,19 +25,25 @@ static void fullpath(char fpath[PATH_MAX], const char * path)
 }
 
 /**
- * Read the target of a symbolic link.
- */
-int qosfs_readlink(const char * path, char * link, size_t size)
-{
-	return 0;
-}
-
-/**
  * Open file.
  */
 int qosfs_open(const char * path, struct fuse_file_info * ffi)
 {
-	return 0;
+	int result = 0;
+	int fd;
+	char fpath[PATH_MAX];
+
+	syslog(LOG_INFO, "open() for %s", path);
+
+	fullpath(fpath, path);
+	if((fd = open(fpath, ffi->flags) < 0))
+	{
+		syslog(LOG_ERR, "error in open() for %s", fpath);
+	}
+
+	ffi->fh = fd;
+
+	return result;
 }
 
 /**
@@ -44,7 +51,17 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
  */
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
-	return 0;
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	syslog(LOG_INFO, "read() for %s", path);
+
+	if((result = pread(ffi->fh, buf, size, offset)) < 0)
+	{
+		syslog(LOG_ERR, "error in read() for %s", fpath);
+	}
+
+	return result;
 }
 
 /**
@@ -53,15 +70,16 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
-	return 0;
-}
+	int result = 0;
 
-/**
- * Get filesystem statistics.
- */
-int qosfs_statfs(const char * path, struct statvfs * statv)
-{
-	return 0;
+	syslog(LOG_INFO, "write() for %s", path);
+
+	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
+	{
+		syslog(LOG_ERR, "error in write() for %s", path);
+	}
+
+	return result;
 }
 
 /**
@@ -69,7 +87,16 @@ int qosfs_statfs(const char * path, struct statvfs * statv)
  */
 int qosfs_release(const char * path, struct fuse_file_info * ffi)
 {
-	return 0;
+	int result = 0;
+
+	syslog(LOG_INFO, "release() for %s", path);
+
+	if((result = close(ffi->fh)) < 0)
+	{
+		syslog(LOG_ERR, "error in release() for %s", path);
+	}
+
+	return result;
 }
 
 /**
@@ -77,7 +104,9 @@ int qosfs_release(const char * path, struct fuse_file_info * ffi)
  */
 void * qosfs_init(struct fuse_conn_info * conn)
 {
-	return NULL:
+	syslog(LOG_INFO, "init() called");
+
+	return NULL;
 }
 
 /**
@@ -89,12 +118,10 @@ void qosfs_destroy(void * userdata)
 
 struct fuse_operations qosfs_operations =
 {
-	.readlink = qosfs_readlink,
 	.open = qosfs_open,
 	.release = qosfs_release,
 	.read = qosfs_read,
 	.write = qosfs_write,
-	.statfs = qosfs_statfs,
 	.init = qosfs_init,
 	.destroy = qosfs_destroy,
 };

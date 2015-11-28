@@ -17,12 +17,100 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#define LOG_CALL(F) (syslog(LOG_INFO, "%s() for %s", F, path))
+#define LOG_ERROR(F) (syslog(LOG_ERR, "error in %s() for %s", F, path))
+
 char * root_dir;
 
 static void fullpath(char fpath[PATH_MAX], const char * path)
 {
 	strcpy(fpath, root_dir);
 	strncat(fpath, path, PATH_MAX);
+}
+
+/**
+ * Get attributes
+ */
+int qosfs_getattr(const char * path, struct stat * statbuf)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("getattr");
+
+	fullpath(fpath, path);
+	if((result = lstat(fpath, statbuf)) != 0)
+	{
+		LOG_ERROR("getattr");
+	}
+
+	return result;
+}
+
+/**
+ * Read target of a symbolic link
+ */
+int qosfs_readlink(const char * path, char * link, size_t size)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("readlink");
+	fullpath(fpath, path);
+
+	if((result = readlink(fpath, link, size - 1)) < 0)
+	{
+		LOG_ERROR("readlink");
+	}
+
+	link[result] = '\0';
+	result = 0;
+
+	return result;
+}
+
+/**
+ * Create a file node
+ */
+int qosfs_mknod(const char * path, mode_t mode, dev_t dev)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("mknod");
+
+	fullpath(fpath, path);
+
+	if(S_ISREG(mode)) 
+	{
+		if((result = open(fpath, O_CREAT | O_EXCL | O_WRONLY, mode)) < 0)
+		{
+			LOG_ERROR("mknod");
+		} else 
+		{
+			if((result = close(result)) < 0)
+			{
+				LOG_ERROR("mknod");
+			}
+		}
+	} else
+	{
+		if(S_ISFIFO(mode))
+		{
+			if((result = mkfifo(fpath, mode)) < 0)
+			{
+				LOG_ERROR("mknod");
+			} else
+		} else
+		{
+			if((result = mknod(fpath, mode, dev)) < 0)
+			{
+				LOG_ERROR("mknod");
+			}
+		}
+	}
+
+	return result;
 }
 
 /**
@@ -34,13 +122,13 @@ int qosfs_opendir(const char * path, struct fuse_file_info * ffi)
 	char fpath[PATH_MAX];
 	DIR * dp;
 
-	syslog(LOG_INFO, "opendir() for %s", path);
+	LOG_CALL("opendir");
 
 	fullpath(fpath, path);
 
 	if((dp = opendir(fpath)) == NULL)
 	{
-		syslog(LOG_ERR, "error in opendir() for %s", fpath);
+		LOG_ERROR("opendir");
 	}
 
 	ffi->fh = (intptr_t) dp;
@@ -58,13 +146,13 @@ int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t o
 	DIR * dp;
 	struct dirent * de;
 
-	syslog(LOG_INFO, "readdir() for %s", path);
+	LOG_CALL("readdir");
 
 	dp = (DIR *) (uintptr_t) ffi->fh;
 	de = readdir(dp);
 	if((de = readdir(dp)) == NULL)
 	{
-		syslog(LOG_ERR, "error in readdir() for %s", path);
+		LOG_ERROR("readdir");
 		return result;
 	}
 
@@ -89,12 +177,12 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 	int fd;
 	char fpath[PATH_MAX];
 
-	syslog(LOG_INFO, "open() for %s", path);
+	LOG_CALL("open");
 
 	fullpath(fpath, path);
 	if((fd = open(fpath, ffi->flags) < 0))
 	{
-		syslog(LOG_ERR, "error in open() for %s", fpath);
+		LOG_ERROR("open");
 	}
 
 	ffi->fh = fd;
@@ -110,11 +198,11 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 	int result = 0;
 	char fpath[PATH_MAX];
 
-	syslog(LOG_INFO, "read() for %s", path);
+	LOG_CALL("read");
 
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
-		syslog(LOG_ERR, "error in read() for %s", fpath);
+		LOG_ERROR("read");
 	}
 
 	return result;
@@ -128,11 +216,11 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 {
 	int result = 0;
 
-	syslog(LOG_INFO, "write() for %s", path);
+	LOG_CALL("write");
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
-		syslog(LOG_ERR, "error in write() for %s", path);
+		LOG_ERROR("write");
 	}
 
 	return result;
@@ -145,11 +233,11 @@ int qosfs_release(const char * path, struct fuse_file_info * ffi)
 {
 	int result = 0;
 
-	syslog(LOG_INFO, "release() for %s", path);
+	LOG_CALL("release");
 
 	if((result = close(ffi->fh)) < 0)
 	{
-		syslog(LOG_ERR, "error in release() for %s", path);
+		LOG_ERROR("release");
 	}
 
 	return result;
@@ -174,6 +262,9 @@ void qosfs_destroy(void * userdata)
 
 struct fuse_operations qosfs_operations =
 {
+	.readlink = qosfs_readlink,
+	.getattr = qosfs_getattr,
+	.mknod = qosfs_mknod,
 	.readdir = qosfs_readdir,
 	.opendir = qosfs_opendir,
 	.open = qosfs_open,

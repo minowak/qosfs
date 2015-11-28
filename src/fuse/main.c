@@ -42,6 +42,7 @@ int qosfs_getattr(const char * path, struct stat * statbuf)
 	if((result = lstat(fpath, statbuf)) != 0)
 	{
 		LOG_ERROR("getattr");
+		syslog(LOG_ERR, "result = %d", result);
 	}
 
 	return result;
@@ -100,7 +101,7 @@ int qosfs_mknod(const char * path, mode_t mode, dev_t dev)
 			if((result = mkfifo(fpath, mode)) < 0)
 			{
 				LOG_ERROR("mknod");
-			} else
+			}
 		} else
 		{
 			if((result = mknod(fpath, mode, dev)) < 0)
@@ -108,6 +109,162 @@ int qosfs_mknod(const char * path, mode_t mode, dev_t dev)
 				LOG_ERROR("mknod");
 			}
 		}
+	}
+
+	return result;
+}
+
+/**
+ * Create a directory
+ */
+int qosfs_mkdir(const char * path, mode_t mode)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("mkdir");
+
+	fullpath(fpath, path);
+	if((result = mkdir(fpath, mode)) < 0)
+	{
+		LOG_ERROR("mkdir");
+	}
+
+	return result;
+}
+
+/**
+ * Remove a file
+ */
+int qosfs_unlink(const char * path)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("unlink");
+
+	fullpath(fpath, path);
+	if((result =  unlink(fpath)) < 0)
+	{
+		LOG_ERROR("unlink");
+	}
+
+	return result;
+}
+
+/**
+ * Remove a directory
+ */
+int qosfs_rmdir(const char * path)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("rmdir");
+
+	fullpath(fpath, path);
+	if((result = rmdir(path)) < 0)
+	{
+		LOG_ERROR("rmdir");
+	}
+
+	return result;
+}
+
+/**
+ * Create a symbolic link
+ */
+int qosfs_symlink(const char * path, const char * link)
+{
+	int result = 0;
+	char flink[PATH_MAX];
+
+	LOG_CALL("symlink");
+
+	fullpath(flink, link);
+	if((result = symlink(path, flink)) < 0)
+	{
+		LOG_ERROR("symlink");
+	}
+
+	return result;
+}
+
+/**
+ * Rename a file
+ */
+int qosfs_rename(const char * path, const char * new_path)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+	char fnew_path[PATH_MAX];
+
+	LOG_CALL("rename");
+
+	fullpath(fpath, path);
+	fullpath(fnew_path, new_path);
+	if((result = rename(fpath, fnew_path)) < 0)
+	{
+		LOG_ERROR("rename");
+	}
+
+	return result;
+}
+
+/**
+ * Create a hard link
+ */
+int qosfs_link(const char * path, const char * new_path)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+	char fnew_path[PATH_MAX];
+
+	LOG_CALL("link");
+
+	fullpath(fpath, path);
+	fullpath(fnew_path, new_path);
+	if((result = link(fpath, fnew_path)) < 0)
+	{
+		LOG_ERROR("link");
+	}
+
+	return result;
+}
+
+/**
+ * Change permissions/mode
+ */
+int qosfs_chmod(const char * path, mode_t mode)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("chmod");
+
+	fullpath(fpath, path);
+	if((result = chmod(fpath, mode)) < 0)
+	{
+		LOG_ERROR("chmod");
+	}
+
+	return result;
+}
+
+/**
+ * Change owner/group
+ */
+int qosfs_chown(const char * path, uid_t uid, gid_t gid)
+{
+	int result = 0;
+	char fpath[PATH_MAX];
+
+	LOG_CALL("chown");
+
+	fullpath(fpath, path);
+	if((result = chown(fpath, uid, gid)) < 0)
+	{
+		LOG_ERROR("chown");
 	}
 
 	return result;
@@ -196,7 +353,6 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
-	char fpath[PATH_MAX];
 
 	LOG_CALL("read");
 
@@ -265,6 +421,15 @@ struct fuse_operations qosfs_operations =
 	.readlink = qosfs_readlink,
 	.getattr = qosfs_getattr,
 	.mknod = qosfs_mknod,
+	.unlink = qosfs_unlink,
+	.rmdir = qosfs_rmdir,
+	.symlink = qosfs_symlink,
+	.link = qosfs_link,
+	.rename = qosfs_rename,
+	.chmod = qosfs_chmod,
+	.chown = qosfs_chown,
+	.getdir = NULL,
+	.mkdir = qosfs_mkdir,
 	.readdir = qosfs_readdir,
 	.opendir = qosfs_opendir,
 	.open = qosfs_open,

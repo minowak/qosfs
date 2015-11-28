@@ -1,7 +1,8 @@
 /*
  * QosFS: Filesystem with Quality of Service support
  *
- * gcc -Wall main.c `pkg-config fuse --cflags --libs` -o qosfs
+ * gcc -Wall main.c `pkg-config fuse --cflags --libs` -o qosf
+ *
  */
 
 #include "include/params.h"
@@ -18,7 +19,7 @@
 #include <dirent.h>
 
 #define LOG_CALL(F) (syslog(LOG_INFO, "%s() for %s", F, path))
-#define LOG_ERROR(F) (syslog(LOG_ERR, "error in %s() for %s", F, path))
+#define LOG_ERROR(F) result = -errno;syslog(LOG_ERR, "error in %s() for %s", F, path)
 
 char * root_dir;
 
@@ -39,9 +40,10 @@ int qosfs_getattr(const char * path, struct stat * statbuf)
 	LOG_CALL("getattr");
 
 	fullpath(fpath, path);
-	if((result = lstat(fpath, statbuf)) != 0)
+	if((result = lstat(fpath, statbuf)) < 0)
 	{
 		LOG_ERROR("getattr");
+		syslog(LOG_ERR, "fpath in getattr = %s", fpath);
 	}
 
 	return result;
@@ -326,7 +328,6 @@ int qosfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t o
 	LOG_CALL("readdir");
 
 	dp = (DIR *) ffi->fh;
-	de = readdir(dp);
 	if((de = readdir(dp)) == NULL)
 	{
 		LOG_ERROR("readdir");

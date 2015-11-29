@@ -9,8 +9,4 @@ script:
     - cd src/fuse
     - make
 after_success:
-    - cd src/fuse
-    - mkdir test
-    - mkdir test_mnt
-    - ./qosfs test test_mnt -f -s
-
+    - make test

@@ -58,3 +58,4 @@ $ ./install.sh --clang-completer
 * Vim (http://www.vim.org/)
 * Vundle (https://github.com/VundleVim/Vundle.vim)
 * YouCompleteMe (https://github.com/Valloric/YouCompleteMe)
+* NERDTree (https://github.com/scrooloose/nerdtree)

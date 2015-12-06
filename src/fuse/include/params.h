@@ -7,6 +7,9 @@
 struct qosfs_data
 {
 	char * root_dir;
+	char * cgroup_name;
+	char * max_read_bytes;
+	char * max_write_bytes;
 };
 
 #endif

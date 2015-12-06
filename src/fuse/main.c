@@ -585,7 +585,11 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
  */
 void * qosfs_init(struct fuse_conn_info * conn)
 {
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "init() called");
+	syslog(LOG_INFO, "creating cgroup: %s", data->cgroup_name);
+
+	cgroup_create(data->cgroup_name);
 
 	return fuse_get_context()->private_data;
 }
@@ -595,7 +599,11 @@ void * qosfs_init(struct fuse_conn_info * conn)
  */
 void qosfs_destroy(void * userdata)
 {
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "destroy() called");
+	syslog(LOG_INFO, "removing cgroup: %s", data->cgroup_name);
+
+	cgroup_remove(data->cgroup_name);
 }
 
 struct fuse_operations qosfs_operations =
@@ -637,9 +645,29 @@ int main(int argc, char ** argv)
 {
 	int i, fuse_stat;
 	struct qosfs_data * fs_data;
+	char * max_read_bytes, * max_write_bytes;
+	char cgroup_name[256];
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
 	syslog(LOG_INFO, "Mounting filesystem.");
+
+	for (i = 1 ; i < 5 ; i++)
+	{
+		if (argv[i][0] == '-') {
+			printf("usage: %s [dir] [mountpoint] [max_read_bytes] [max_write_bytes] {[options]}\n", argv[0]);
+			return EXIT_SUCCESS;
+		}
+	}
+
+	max_read_bytes = argv[3];
+	max_write_bytes = argv[4];
+
+	for (i = 3 ; i < argc - 2; i++)
+	{
+		argv[i] = argv[i+2];
+	}
+
+	argc -= 2;
 
 	for (i = 1 ; i < argc && (argv[i][0] == '-') ; i++)
 	{
@@ -657,7 +685,12 @@ int main(int argc, char ** argv)
 		abort();
 	}
 
+	sprintf(cgroup_name, "qosfs_%d", getpid());
+
 	fs_data->root_dir = realpath(argv[i], NULL);
+	fs_data->cgroup_name = cgroup_name;
+	fs_data->max_read_bytes = max_read_bytes;
+	fs_data->max_write_bytes = max_write_bytes;
 	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);
 
 	for(; i < argc ; i++)

@@ -2,18 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <unistd.h>
 
 int cgroup_create(const char * name)
 {
 	char cmd[256];
+	char uname[256];
 	int result;
 
-	sprintf(cmd, "cgcreate -g %s:%s", CGROUP_CTRL, name);
+	if((result = getlogin_r(uname, sizeof(uname))) < 0)
+	{
+		syslog(LOG_ERR, "getlogin_r() failed");
+	}
+
+	sprintf(cmd, "cgcreate -a %s -g %s:%s", uname, CGROUP_CTRL, name);
 	if((result = system(cmd)) != 0)
 	{
 		syslog(LOG_ERR, "cgcreate failed");
-
 	}
+
 	return result;
 }
 

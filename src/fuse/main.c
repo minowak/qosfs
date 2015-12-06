@@ -22,6 +22,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #define LOG_CALL(F) (syslog(LOG_INFO, "%s() for %s", F, path))
 #define LOG_ERROR(F) result = -errno;syslog(LOG_ERR, "error in %s() for %s", F, path)
@@ -670,6 +671,7 @@ int main(int argc, char ** argv)
 	struct qosfs_data * fs_data;
 	char * max_read_bytes, * max_write_bytes;
 	char cgroup_name[256];
+	pthread_t load_checker;
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
 	syslog(LOG_INFO, "Mounting filesystem.");
@@ -725,7 +727,9 @@ int main(int argc, char ** argv)
 
 	argc--;
 
+	pthread_create(&load_checker, NULL, &disk_load_checker, NULL); // TODO pass /dev/sdX
 	fuse_stat = fuse_main(argc, argv, &qosfs_operations, fs_data);
+	pthread_cancel(load_checker);
 
 	syslog(LOG_INFO, "fuse_main returned %d", fuse_stat);
 

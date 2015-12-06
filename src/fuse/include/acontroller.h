@@ -1,7 +1,11 @@
 #ifndef _ACONTROLLER_H_
 #define _ACONTROLLER_H_
 
-#define AC_TESTFILE ".loadtest"
+enum load 
+{
+	READ,
+	WRITE
+};
 
 struct ac_data
 {
@@ -24,5 +28,18 @@ int check_write_available(struct ac_data, unsigned int bytes);
  * @param dev block device name (eg. sda)
  */
 int get_disk_data(struct ac_data * data);
+
+/**
+ * Thread for checking current disk load;
+ * It reads from /sys/block/sdX/stat every second and calculates current disk I/O usage.
+ * @param dev block device name (eg. sda)
+ */
+void * disk_load_checker(void * dev);
+
+/**
+ * Returns current disk load.
+ * @param load load type (read or write).
+ */
+double get_current_load(enum load load);
 
 #endif

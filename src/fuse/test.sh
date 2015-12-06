@@ -7,7 +7,7 @@ echo "Creating mount point"
 mkdir testmount
 
 echo "Mounting FS"
-./qosfs testdir testmount -f -s &
+sudo ./qosfs testdir testmount 1 1 -f -s &
 fspid=$!
 homepath=$PWD
 sleep 5

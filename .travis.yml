@@ -4,8 +4,9 @@ env:
     - BRANCH="master"
     - BRANCH="develop"
 before_install: sudo apt-get update
-install: sudo apt-get install -qq libfuse-dev pkg-config fuse
+install: sudo apt-get install -qq libfuse-dev pkg-config fuse cgroup-bin
 script:
     - cd src/fuse
     - make
-
+after_success:
+    - make test

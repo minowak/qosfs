@@ -1,7 +1,7 @@
 CFLAGS=-Wall -DFUSE_USE_VERSION=29 `pkg-config fuse --cflags`
 LFLAGS=-Wall `pkg-config fuse --libs`
 CC=gcc
-SRC=main.c cgroups.c
+SRC=main.c cgroups.c acontroller.c
 OBJ=$(SRC:.c=.o)
 BIN=qosfs
 

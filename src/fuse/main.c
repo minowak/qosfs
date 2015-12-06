@@ -7,6 +7,7 @@
 
 #include "include/params.h"
 #include "include/cgroups.h"
+#include "include/acontroller.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -708,6 +709,8 @@ int main(int argc, char ** argv)
 	}
 
 	sprintf(cgroup_name, "qosfs_%d", getpid());
+
+	get_disk_data(&(fs_data->ac_data));
 
 	fs_data->root_dir = realpath(argv[i], NULL);
 	fs_data->cgroup_name = cgroup_name;

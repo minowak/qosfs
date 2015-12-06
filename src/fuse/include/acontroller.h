@@ -14,14 +14,9 @@ struct ac_data
 };
 
 /**
- * Checks if device has available read load.
+ * Checks if device has available load.
  */
-int check_read_available(struct ac_data, unsigned int bytes);
-
-/**
- * Checks if device has available read load.
- */
-int check_write_available(struct ac_data, unsigned int bytes);
+int check_load_available(struct ac_data, unsigned int bytes, enum load load);
 
 /**
  * Returns maximum possible disk read speed (in bytes/s).
@@ -40,7 +35,7 @@ void * disk_load_checker(void * dev);
  * Returns current disk load.
  * @param load load type (read or write).
  */
-double get_current_load(enum load load);
+int get_current_load(enum load load);
 
 /**
  * Returns debice name for given path.

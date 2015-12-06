@@ -9,8 +9,8 @@
 #include <pthread.h>
 #include <string.h>
 
-double read_load = 0.0;
-double write_load = 0.0;
+unsigned int read_load = 0;
+unsigned int write_load = 0;
 
 pthread_mutex_t read_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -62,18 +62,18 @@ void * disk_load_checker(void * dev)
 			fclose(fp);
 		}
 
-        pthread_mutex_lock(&read_mutex);
+                pthread_mutex_lock(&read_mutex);
 		pthread_mutex_lock(&write_mutex);
 		
-		read_load = (double)(read_bytes_increment / 1024);
-		write_load = (double)(write_bytes_increment / 1024);
-		double read_kb = read_load;
-		double write_kb = write_load;
+		read_load = (unsigned int)(read_bytes_increment / 1024);
+		write_load = (unsigned int)(write_bytes_increment / 1024);
+		unsigned int read_kb = read_load;
+		unsigned int write_kb = write_load;
 		
 		pthread_mutex_unlock(&read_mutex);
 		pthread_mutex_unlock(&write_mutex);
 
-		printf("[LC] Current disk load: READ:\t%.2fkB/s \t| WRITE:\t%.2fkB/s\n", read_kb, write_kb);
+		printf("[LC] Current disk load: READ:\t%dkB/s \t| WRITE:\t%dkB/s\n", read_kb, write_kb);
 
 		sleep(1);
 		pthread_testcancel();
@@ -82,9 +82,9 @@ void * disk_load_checker(void * dev)
 	return NULL;
 }
 
-double get_current_load(enum load load)
+int get_current_load(enum load load)
 {
-	double result = 0.0;
+	int result = 0;
 	switch (load)
 	{
 		case READ:
@@ -97,6 +97,34 @@ double get_current_load(enum load load)
 			result = write_load;
 			pthread_mutex_unlock(&write_mutex);
 			break;
+	}
+
+	return result;
+}
+
+int check_load_available(struct ac_data data, unsigned int bytes, enum load load)
+{
+	int result;
+	unsigned int current_load = get_current_load(load);		
+	unsigned int disk_speed; 
+	unsigned int required_kb = bytes * 1024;
+	
+	switch(load)
+	{
+        	case READ:
+                	disk_speed = (int)(data.disk_read_speed * 1024);
+                	break;
+        	case WRITE:
+        	        disk_speed = (int)(data.disk_write_speed * 1024);
+        	        break;
+	}
+
+	if (disk_speed - current_load >= required_kb)
+	{
+		result = 1;
+	} else
+	{
+		result = 0;
 	}
 
 	return result;

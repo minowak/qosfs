@@ -6,6 +6,7 @@
  */
 
 #include "include/params.h"
+#include "include/cgroups.h"
 
 #include <fuse.h>
 #include <limits.h>

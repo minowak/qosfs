@@ -578,8 +578,6 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
 	return result;
 }
 
-// fgetattr
-
 /**
  * Initialize filesystem.
  */
@@ -590,6 +588,15 @@ void * qosfs_init(struct fuse_conn_info * conn)
 	syslog(LOG_INFO, "creating cgroup: %s", data->cgroup_name);
 
 	cgroup_create(data->cgroup_name);
+
+	syslog(LOG_INFO, "setting cgroup params: %s, %s", data->max_read_bytes, data->max_write_bytes);
+
+	cgroup_set(data->cgroup_name, CGROUP_RPARAM, data->max_read_bytes);
+	cgroup_set(data->cgroup_name, CGROUP_WPARAM, data->max_write_bytes);
+
+	syslog(LOG_INFO, "moving process to cgroup");
+
+	cgroup_classify(data->cgroup_name, getpid());
 
 	return fuse_get_context()->private_data;
 }

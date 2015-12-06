@@ -2,6 +2,7 @@
 #define _CGROUPS_H_
 
 #include <stdio.h>
+#include <sys/types.h>
 
 #define CGROUP_CTRL "blkio"
 #define CGROUP_RPARAM "throttle.read_bps_device"
@@ -31,5 +32,12 @@ int cgroup_remove(const char * name);
  * @param value parameter value
  */
 int cgroup_set(const char * name, const char * param, const char * value);
+
+/**
+ * Move process to cgroup.
+ * @param name cgroup name
+ * @param pid process id
+ */
+int cgroup_classify(const char * name, pid_t pid);
 
 #endif

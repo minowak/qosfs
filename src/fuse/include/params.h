@@ -4,4 +4,9 @@
 #define PATH_MAX 256
 #define LOG_TAG "QoSFS"
 
+struct qosfs_data
+{
+	char * root_dir;
+};
+
 #endif

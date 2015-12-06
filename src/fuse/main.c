@@ -446,8 +446,10 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("write");
+	cgroup_classify(data->cgroup_name, getpid());
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{

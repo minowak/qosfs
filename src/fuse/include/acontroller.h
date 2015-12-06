@@ -42,4 +42,11 @@ void * disk_load_checker(void * dev);
  */
 double get_current_load(enum load load);
 
+/**
+ * Returns debice name for given path.
+ * @param root_dir path
+ * @param dev device name
+ */
+int get_device_name(const char * root_dir, char * dev);
+
 #endif

@@ -671,6 +671,7 @@ int main(int argc, char ** argv)
 	struct qosfs_data * fs_data;
 	char * max_read_bytes, * max_write_bytes;
 	char cgroup_name[256];
+	char device_name[256];
 	pthread_t load_checker;
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
@@ -726,8 +727,8 @@ int main(int argc, char ** argv)
 	}
 
 	argc--;
-
-	pthread_create(&load_checker, NULL, &disk_load_checker, NULL); // TODO pass /dev/sdX
+	get_device_name(fs_data->root_dir, device_name);
+	pthread_create(&load_checker, NULL, &disk_load_checker, device_name);
 	fuse_stat = fuse_main(argc, argv, &qosfs_operations, fs_data);
 	pthread_cancel(load_checker);
 

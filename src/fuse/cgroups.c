@@ -16,7 +16,7 @@ int cgroup_create(const char * name)
 		syslog(LOG_ERR, "getlogin_r() failed");
 	}
 
-	sprintf(cmd, "cgcreate -a %s -g %s:%s", uname, CGROUP_CTRL, name);
+	sprintf(cmd, "cgcreate -a %s:%s -t %s:%s -g %s:%s", uname, uname, uname, uname, CGROUP_CTRL, name);
 	if ((result = system(cmd)) != 0)
 	{
 		syslog(LOG_ERR, "cgcreate failed");
@@ -44,7 +44,7 @@ int cgroup_set(const char * name, const char * param, const char * value)
 	char cmd[256];
 	int result;
 
-	sprintf(cmd, "cgset -r %s.%s=%s %s", CGROUP_CTRL, param, value, name);
+	sprintf(cmd, "cgset -r %s.%s=\"%s\" %s", CGROUP_CTRL, param, value, name);
 	if ((result = system(cmd)) != 0)
 	{
 		syslog(LOG_ERR, "cgset failed");

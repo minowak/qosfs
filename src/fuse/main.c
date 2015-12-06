@@ -8,6 +8,9 @@
 #include "include/params.h"
 #include "include/cgroups.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <fuse.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -423,8 +426,10 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("read");
+	cgroup_classify(data->cgroup_name, getpid());
 
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -584,19 +589,27 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
 void * qosfs_init(struct fuse_conn_info * conn)
 {
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	char param[256];
+	int bytes;
+	struct stat * stat_buf;
+
 	syslog(LOG_INFO, "init() called");
 	syslog(LOG_INFO, "creating cgroup: %s", data->cgroup_name);
 
 	cgroup_create(data->cgroup_name);
 
-	syslog(LOG_INFO, "setting cgroup params: %s, %s", data->max_read_bytes, data->max_write_bytes);
+	syslog(LOG_INFO, "setting cgroup params: %sb/s, %sb/s", data->max_read_bytes, data->max_write_bytes);
 
-	cgroup_set(data->cgroup_name, CGROUP_RPARAM, data->max_read_bytes);
-	cgroup_set(data->cgroup_name, CGROUP_WPARAM, data->max_write_bytes);
+	bytes = atoi(data->max_read_bytes);
+	stat_buf = (struct stat *) malloc(sizeof(struct stat));
+	stat(data->root_dir, stat_buf);
+	bytes *= 1048576;
+	sprintf(param, "%d:%d %d", major(stat_buf->st_dev), minor(stat_buf->st_rdev), bytes);
 
-	syslog(LOG_INFO, "moving process to cgroup");
-
-	cgroup_classify(data->cgroup_name, getpid());
+	cgroup_set(data->cgroup_name, CGROUP_RPARAM, param);
+	bytes = atoi(data->max_write_bytes);
+	bytes *= 1048576;
+	cgroup_set(data->cgroup_name, CGROUP_WPARAM, param);
 
 	return fuse_get_context()->private_data;
 }

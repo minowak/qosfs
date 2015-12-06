@@ -16,3 +16,5 @@ $(BIN): $(OBJ)
 .c.o:
 	$(CC) -o $@ -c $< $(CFLAGS)
 
+test:
+	./test.sh

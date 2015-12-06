@@ -21,11 +21,10 @@
 #define LOG_CALL(F) (syslog(LOG_INFO, "%s() for %s", F, path))
 #define LOG_ERROR(F) result = -errno;syslog(LOG_ERR, "error in %s() for %s", F, path)
 
-char * root_dir;
-
 static void fullpath(char fpath[PATH_MAX], const char * path)
 {
-	strcpy(fpath, root_dir);
+	struct qosfs_data * private_data = (struct qosfs_data *) fuse_get_context()->private_data;
+	strcpy(fpath, private_data->root_dir);
 	strncat(fpath, path, PATH_MAX);
 }
 
@@ -587,7 +586,7 @@ void * qosfs_init(struct fuse_conn_info * conn)
 {
 	syslog(LOG_INFO, "init() called");
 
-	return NULL;
+	return fuse_get_context()->private_data;
 }
 
 /**
@@ -636,6 +635,7 @@ struct fuse_operations qosfs_operations =
 int main(int argc, char ** argv)
 {
 	int i, fuse_stat;
+	struct qosfs_data * fs_data;
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
 	syslog(LOG_INFO, "Mounting filesystem.");
@@ -648,8 +648,16 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	root_dir = realpath(argv[i], NULL);
-	syslog(LOG_INFO, "Setting root dir: %s", root_dir);
+	if((fs_data = malloc(sizeof(struct qosfs_data))) == NULL) 
+	{
+		perror("fs_data malloc");
+		syslog(LOG_ERR, "Malloc for fs_data");
+		closelog();
+		abort();
+	}
+
+	fs_data->root_dir = realpath(argv[i], NULL);
+	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);
 
 	for(; i < argc ; i++)
 	{
@@ -658,7 +666,7 @@ int main(int argc, char ** argv)
 
 	argc--;
 
-	fuse_stat = fuse_main(argc, argv, &qosfs_operations, NULL);
+	fuse_stat = fuse_main(argc, argv, &qosfs_operations, fs_data);
 
 	syslog(LOG_INFO, "fuse_main returned %d", fuse_stat);
 

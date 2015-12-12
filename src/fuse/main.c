@@ -680,7 +680,9 @@ int main(int argc, char ** argv)
 	for (i = 1 ; i < 5 ; i++)
 	{
 		if (argv[i][0] == '-') {
+#ifdef DEBUG
 			printf("usage: %s [dir] [mountpoint] [max_read_bytes] [max_write_bytes] {[options]}\n", argv[0]);
+#endif
 			return EXIT_SUCCESS;
 		}
 	}

@@ -28,7 +28,9 @@ void * disk_load_checker(void * dev)
 	sprintf(stat_file_path, "/sys/block/%s/stat", root_dev);
 	// We need 3rd and 7th column (read/write sectors) and multiply by 512 to get bytes.
 
+#ifdef DEBUG
 	printf("[AC] Starting load checker thread for %s (%s)\n", dev_name, root_dev);
+#endif
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type);
@@ -73,7 +75,9 @@ void * disk_load_checker(void * dev)
 		pthread_mutex_unlock(&read_mutex);
 		pthread_mutex_unlock(&write_mutex);
 
+#ifdef DEBUG
 		printf("[LC] Current disk load: READ:\t%dkB/s \t| WRITE:\t%dkB/s\n", read_kb, write_kb);
+#endif
 
 		sleep(1);
 		pthread_testcancel();
@@ -139,7 +143,9 @@ int get_disk_data(struct ac_data * data)
 	{
 		char response[32];
 		fscanf(fp, "%s", response);
+#ifdef DEBUG
 		printf("[AC] Disk write speed: %sMb/s\n", response);
+#endif
 		fclose(fp);
 		data->disk_write_speed = atoi(response);
 	} else 
@@ -161,7 +167,9 @@ int get_disk_data(struct ac_data * data)
 	{
 		char response[32];
 		fscanf(fp, "%s", response);
+#ifdef DEBUG
 		printf("[AC] Disk read speed: %sMb/s\n", response);
+#endif
 		fclose(fp);
 		data->disk_read_speed = atoi(response);
 	} else

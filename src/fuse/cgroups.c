@@ -21,7 +21,9 @@ int cgroup_create(const char * name)
 	{
 		syslog(LOG_ERR, "cgcreate failed");
 	}
+#ifdef DEBUG
 	printf("[CG] Created cgroup: %s\n", name);
+#endif
 
 	return result;
 }

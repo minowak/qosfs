@@ -1,70 +1,105 @@
 #include "include/cgroups.h"
+
+#include <libcgroup.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
-int cgroup_create(const char * name)
+int cgroup_initialize()
 {
-	char cmd[256];
-	char uname[256];
-	int result;
+	int result = 0;
 
-	if((result = getlogin_r(uname, sizeof(uname))) < 0)
+	if((result = cgroup_init()) != 0)
 	{
-		syslog(LOG_ERR, "getlogin_r() failed");
+		syslog(LOG_ERR, "cgroup_init() failed");
 	}
 
-	sprintf(cmd, "cgcreate -a %s:%s -t %s:%s -g %s:%s", uname, uname, uname, uname, CGROUP_CTRL, name);
-	if ((result = system(cmd)) != 0)
+	return result;
+}
+
+struct cgroup * cgroup_create(const char * name)
+{
+    char cgroup_path[256];
+	struct cgroup * cgroup;
+	sprintf(cgroup_path, "%s%s", CGROUP_PATH, name);
+	
+    if(mkdir(cgroup_path, 0777) < 0)
 	{
-		syslog(LOG_ERR, "cgcreate failed");
+		perror("mkdir");
+		printf("%s", cgroup_path);
+		syslog(LOG_ERR, "mkdir() failed");
+		return NULL;
 	}
+
+	if((cgroup = cgroup_new_cgroup(name)) == NULL)
+	{
+		syslog(LOG_ERR, "cgroup_new_cgroup() failed");
+		return NULL;
+	}
+
+	if(cgroup_create_cgroup(cgroup, 1) != 0)
+	{
+		syslog(LOG_ERR, "cgroup_create_cgroup() failed");
+		return NULL;
+	}
+	
 #ifdef DEBUG
 	printf("[CG] Created cgroup: %s\n", name);
+#endif
+	
+	return cgroup;
+}
+
+struct cgroup_controller * cgroup_create_controller(struct cgroup * cgroup)
+{
+	struct cgroup_controller * result;
+
+	if((result = cgroup_add_controller(cgroup, CGROUP_CTRL)) == NULL)
+	{
+		syslog(LOG_ERR, "cgroup_add_controller() failed");
+		return NULL;
+	}
+
+#ifdef DEBUG
+	printf("[CG] Created controller: %s\n", CGROUP_CTRL);
 #endif
 
 	return result;
 }
 
-int cgroup_remove(const char * name)
+int cgroup_remove(struct cgroup * cgroup)
 {
-	char cmd[256];
 	int result;
 
-	sprintf(cmd, "cgdelete -g %s:%s", CGROUP_CTRL, name);
-	if ((result = system(cmd)) != 0)
+	if((result = cgroup_delete_cgroup(cgroup, 1)) != 0)
 	{
-		syslog(LOG_ERR, "cgdelete failed");
+		syslog(LOG_ERR, "cgroup_delete_cgroup() failed");
 	}
 
 	return result;
 }
 
-int cgroup_set(const char * name, const char * param, const char * value)
+int cgroup_set(struct cgroup_controller * controller, const char * param, const char * value)
 {
-	char cmd[256];
 	int result;
-
-	sprintf(cmd, "cgset -r %s.%s=\"%s\" %s", CGROUP_CTRL, param, value, name);
-	if ((result = system(cmd)) != 0)
+	if((result = cgroup_add_value_string(controller, param, value)) != 0)
 	{
-		syslog(LOG_ERR, "cgset failed");
+		syslog(LOG_ERR, "cgroup_set_value_string() failed");
 	}
 
 	return result;
 }
 
-int cgroup_classify(const char * name, pid_t pid)
+int cgroup_classify(struct cgroup * cgroup, pid_t pid)
 {
-	char cmd[256];
 	int result;
-
-	sprintf(cmd, "cgclassify -g %s:%s %d", CGROUP_CTRL, name, pid);
-	if ((result = system(cmd)) != 0)
+	if((result = cgroup_attach_task_pid(cgroup, pid)) != 0)
 	{
-		syslog(LOG_ERR, "cgclassify failed");
+		syslog(LOG_ERR, "cgroup_attach_task_pid() failed");
 	}
 
 	return result;

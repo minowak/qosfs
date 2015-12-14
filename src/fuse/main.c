@@ -431,7 +431,7 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("read");
-	cgroup_classify(data->cgroup_name, getpid());
+	cgroup_classify(data->cgroup, getpid());
 
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -451,7 +451,7 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("write");
-	cgroup_classify(data->cgroup_name, getpid());
+	cgroup_classify(data->cgroup, getpid());
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -598,11 +598,7 @@ void * qosfs_init(struct fuse_conn_info * conn)
 	struct stat * stat_buf;
 
 	syslog(LOG_INFO, "init() called");
-	syslog(LOG_INFO, "creating cgroup: %s", data->cgroup_name);
-
-	cgroup_create(data->cgroup_name);
-
-	syslog(LOG_INFO, "setting cgroup params: %sb/s, %sb/s", data->max_read_bytes, data->max_write_bytes);
+	syslog(LOG_INFO, "setting cgroup params: %sMb/s, %sMb/s", data->max_read_bytes, data->max_write_bytes);
 
 	bytes = atoi(data->max_read_bytes);
 	stat_buf = (struct stat *) malloc(sizeof(struct stat));
@@ -610,10 +606,10 @@ void * qosfs_init(struct fuse_conn_info * conn)
 	bytes *= 1048576;
 	sprintf(param, "%d:%d %d", major(stat_buf->st_dev), minor(stat_buf->st_rdev), bytes);
 
-	cgroup_set(data->cgroup_name, CGROUP_RPARAM, param);
+	cgroup_set(data->cgroup_controller, CGROUP_RPARAM, param);
 	bytes = atoi(data->max_write_bytes);
 	bytes *= 1048576;
-	cgroup_set(data->cgroup_name, CGROUP_WPARAM, param);
+	cgroup_set(data->cgroup_controller, CGROUP_WPARAM, param);
 
 	return fuse_get_context()->private_data;
 }
@@ -625,9 +621,9 @@ void qosfs_destroy(void * userdata)
 {
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "destroy() called");
-	syslog(LOG_INFO, "removing cgroup: %s", data->cgroup_name);
+	syslog(LOG_INFO, "removing cgroup");
 
-	cgroup_remove(data->cgroup_name);
+	cgroup_remove(data->cgroup);
 }
 
 struct fuse_operations qosfs_operations =
@@ -672,6 +668,8 @@ int main(int argc, char ** argv)
 	char * max_read_bytes, * max_write_bytes;
 	char cgroup_name[256];
 	char device_name[256];
+	struct cgroup * cgroup;
+	struct cgroup_controller * cgroup_controller;
 	pthread_t load_checker;
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
@@ -715,10 +713,16 @@ int main(int argc, char ** argv)
 
 	sprintf(cgroup_name, "qosfs_%d", getpid());
 
+	syslog(LOG_INFO, "Creating cgroup %s", cgroup_name);
+	cgroup_initialize();
+	cgroup = cgroup_create(cgroup_name);
+	cgroup_controller = cgroup_create_controller(cgroup);
+
 	get_disk_data(&(fs_data->ac_data));
 
 	fs_data->root_dir = realpath(argv[i], NULL);
-	fs_data->cgroup_name = cgroup_name;
+    fs_data->cgroup = cgroup;
+	fs_data->cgroup_controller = cgroup_controller;
 	fs_data->max_read_bytes = max_read_bytes;
 	fs_data->max_write_bytes = max_write_bytes;
 	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);

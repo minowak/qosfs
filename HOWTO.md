@@ -10,7 +10,7 @@ Required libraries:
 FUSE should be already installed on this distribution. I case it isn't it can be installed via command:
 
 ```
-sudo apt-get install fuse
+sudo apt-get install fuse libfuse-dev
 ```
 
 ## Cgroups installation

@@ -7,6 +7,7 @@
 
 #include "include/params.h"
 #include "include/cgroups.h"
+#include "include/acontroller.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,6 +22,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #define LOG_CALL(F) (syslog(LOG_INFO, "%s() for %s", F, path))
 #define LOG_ERROR(F) result = -errno;syslog(LOG_ERR, "error in %s() for %s", F, path)
@@ -669,6 +671,8 @@ int main(int argc, char ** argv)
 	struct qosfs_data * fs_data;
 	char * max_read_bytes, * max_write_bytes;
 	char cgroup_name[256];
+	char device_name[256];
+	pthread_t load_checker;
 
 	openlog(LOG_TAG, LOG_PID|LOG_CONS, LOG_USER);
 	syslog(LOG_INFO, "Mounting filesystem.");
@@ -676,7 +680,9 @@ int main(int argc, char ** argv)
 	for (i = 1 ; i < 5 ; i++)
 	{
 		if (argv[i][0] == '-') {
+#ifdef DEBUG
 			printf("usage: %s [dir] [mountpoint] [max_read_bytes] [max_write_bytes] {[options]}\n", argv[0]);
+#endif
 			return EXIT_SUCCESS;
 		}
 	}
@@ -709,6 +715,8 @@ int main(int argc, char ** argv)
 
 	sprintf(cgroup_name, "qosfs_%d", getpid());
 
+	get_disk_data(&(fs_data->ac_data));
+
 	fs_data->root_dir = realpath(argv[i], NULL);
 	fs_data->cgroup_name = cgroup_name;
 	fs_data->max_read_bytes = max_read_bytes;
@@ -721,8 +729,10 @@ int main(int argc, char ** argv)
 	}
 
 	argc--;
-
+	get_device_name(fs_data->root_dir, device_name);
+	pthread_create(&load_checker, NULL, &disk_load_checker, device_name);
 	fuse_stat = fuse_main(argc, argv, &qosfs_operations, fs_data);
+	pthread_cancel(load_checker);
 
 	syslog(LOG_INFO, "fuse_main returned %d", fuse_stat);
 

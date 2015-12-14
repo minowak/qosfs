@@ -1,30 +1,53 @@
 # HOWTO Installation and usage
 
-This method was tested on _Ubuntu 15.10_ with kernel version 4.2.0-16-generic
+Project was tested on _Ubuntu 15.10_ with kernel version 4.2.0-16-generic and
+ _CentOS 7_ with kernel version 3.10.0-229.e17.x86_64.
 
 Required libraries:
 * fuse
 * cgroups
 
-## FUSE installation
-FUSE should be already installed on this distribution. I case it isn't it can be installed via command:
+CentOS minimal also requires installation of _gcc_
 
+```
+yum install gcc
+```
+
+## FUSE installation
+
+### Ubuntu
 ```
 sudo apt-get install fuse libfuse-dev
 ```
 
-## Cgroups installation
-Cgroups can be installed via command:
+### CentOS
+```
+yum install fuse-libs fuse-devel
+```
 
+## Cgroups installation
+
+### Ubuntu
 ```
 sudo apt-get install cgroup-bin
+```
+
+### CentOS
+```
+yum install libcgroup libcgroup-tools
 ```
 
 ## Getting the code
 Git is required to obtain project source code.
 
+### Ubuntu
 ```
 sudo apt-get install git
+```
+
+### CentOS
+```
+yum install git
 ```
 
 Cloning repository

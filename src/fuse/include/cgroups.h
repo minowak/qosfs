@@ -4,35 +4,26 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-#include <libcgroup.h>
-
 #define CGROUP_CTRL "blkio"
 #define CGROUP_RPARAM "throttle.read_bps_device"
 #define CGROUP_WPARAM "throttle.write_bps_device"
-#define CGROUP_PATH "/sys/fs/cgroup/blkio/"
 
 /**
- * Initializes libcgroup.
+ * Initializes cgroup library; should be called befory any interactions ith cgroups.
  */
-int cgroup_initialize(void);
+int cgroup_init();
 
 /**
  * Creates new control group.
  * @param name group name
  */
-struct cgroup * cgroup_create(const char * name);
-
-/**
- * Creates controller BLKIO for given cgroup.
- * @param cgroup cgroup
- */
-struct cgroup_controller * cgroup_create_controller(struct cgroup * cgroup);
+int cgroup_create(const char * name);
 
 /**
  * Removes control group.
  * @param name group name
  */
-int cgroup_remove(struct cgroup * cgroup);
+int cgroup_remove(const char * name);
 
 /**
  * Sets limits to cgroup blkio.
@@ -40,13 +31,13 @@ int cgroup_remove(struct cgroup * cgroup);
  * @param param parameter name
  * @param value parameter value
  */
-int cgroup_set(struct cgroup_controller * controller, const char * param, const char * value);
+int cgroup_set(const char * name, const char * param, const char * value);
 
 /**
  * Move process to cgroup.
  * @param name cgroup name
  * @param pid process id
  */
-int cgroup_classify(struct cgroup * cgroup, pid_t pid);
+int cgroup_classify(const char * name, pid_t pid);
 
 #endif

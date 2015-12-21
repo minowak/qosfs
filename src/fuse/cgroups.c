@@ -73,8 +73,6 @@ int cgroup_create(const char * name)
     if(mkdir(cgroup_path, 0777) < 0)
 	{
 		result = -errno;
-		perror("mkdir");
-		printf("%s", cgroup_path);
 		syslog(LOG_ERR, "mkdir() failed");
 		return result;
 	}
@@ -93,14 +91,14 @@ int cgroup_remove(const char * name)
 
 	sprintf(cgroup_path, "%s/%s", cgroup_mount_point, name);
 
-	if(rmdir(cgroup_path) != 0)
+	if(rmdir(cgroup_path) < 0)
 	{
 		result = -errno;
 		syslog(LOG_ERR, "cgroup_remove() failed");
 	}
 
 #ifdef DEBUG
-	printf("[CG] removed contrl group: %s\n", name);
+	printf("[CG] removed control group: %s\n", name);
 #endif
 
 	return result;
@@ -121,7 +119,7 @@ int cgroup_set(const char * name, const char * param, const char * value)
 		return result;
 	}
 
-	if(fputs(value, fp) != 0)
+	if(fputs(value, fp) < 0)
 	{
 		result = -errno;
 		syslog(LOG_ERR, "cgroup_set() failed");
@@ -149,17 +147,18 @@ int cgroup_classify(const char * name, pid_t pid)
 	if((fp = fopen(cgroup_path, "w")) == NULL)
 	{
 		result = -errno;
-		syslog(LOG_ERR, "cgroup_classify() failed");
+		syslog(LOG_ERR, "cgroup_classify()[fopen] failed");
 		return result;
 	}
 
 	sprintf(s_pid, "%d", pid);
-	if(fputs(s_pid, fp) != 0)
+	if(fputs(s_pid, fp) < 0)
 	{
 		result = -errno;
-		syslog(LOG_ERR, "cgroup_classify() failed");
+		syslog(LOG_ERR, "cgroup_classify()[fputs] failed");
 		return result;
 	}
+	fclose(fp);
 
 #ifdef DEBUG
 	printf("[CG] Classified process with pid: %d\n", pid);

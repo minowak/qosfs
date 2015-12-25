@@ -428,8 +428,10 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("read");
+	cgroup_classify(data->cgroup_name, getpid());
 
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -446,8 +448,10 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("write");
+	cgroup_classify(data->cgroup_name, getpid());
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -710,7 +714,7 @@ int main(int argc, char ** argv)
 	syslog(LOG_INFO, "Creating cgroup %s", cgroup_name);
 	cgroup_init();
 	cgroup_create(cgroup_name);
-	//cgroup_classify(cgroup_name, getpid());
+	cgroup_classify(cgroup_name, getpid());
 
 	get_disk_data(&(fs_data->ac_data));
 

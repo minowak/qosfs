@@ -73,6 +73,8 @@ int cgroup_create(const char * name)
     if(mkdir(cgroup_path, 0777) < 0)
 	{
 		result = -errno;
+		perror("mkdir");
+		printf("%s", cgroup_path);
 		syslog(LOG_ERR, "mkdir() failed");
 		return result;
 	}

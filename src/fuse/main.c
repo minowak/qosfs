@@ -431,7 +431,7 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("read");
-	cgroup_classify(data->cgroup_name, getpid());
+	cgroup_classify(data->cgroup_name, fuse_get_context()->pid);
 
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -451,7 +451,7 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("write");
-	cgroup_classify(data->cgroup_name, getpid());
+	cgroup_classify(data->cgroup_name, fuse_get_context()->pid);
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -595,16 +595,13 @@ void * qosfs_init(struct fuse_conn_info * conn)
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	char param[256];
 	int bytes;
-	struct stat * stat_buf;
 
 	syslog(LOG_INFO, "init() called");
 	syslog(LOG_INFO, "setting cgroup params: %sMb/s, %sMb/s", data->max_read_bytes, data->max_write_bytes);
 
 	bytes = atoi(data->max_read_bytes);
-	stat_buf = (struct stat *) malloc(sizeof(struct stat));
-	stat(data->root_dir, stat_buf);
 	bytes *= 1048576;
-	sprintf(param, "%d:%d %d", major(stat_buf->st_dev), minor(stat_buf->st_rdev), bytes);
+	sprintf(param, "%d:%d %d", conn->proto_major, conn->proto_minor, bytes);
 
 	cgroup_set(data->cgroup_name, CGROUP_RPARAM, param);
 	bytes = atoi(data->max_write_bytes);

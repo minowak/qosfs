@@ -160,6 +160,7 @@ int cgroup_classify(const char * name, pid_t pid)
 	{
 		result = -errno;
 		syslog(LOG_ERR, "cgroup_classify()[fputs] failed");
+		fclose(fp);
 		return result;
 	}
 	fclose(fp);

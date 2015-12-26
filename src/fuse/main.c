@@ -473,14 +473,14 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 		}
 
 		gettimeofday(&t2, NULL);
-		elapsed_time = ((t2.tv_usec - t1.tv_usec) / 1000.0);
+		elapsed_time = (t2.tv_usec - t1.tv_usec);
 
 		double expected_speed = ((double)(max_read_bytes * elapsed_time) / (double)read_part);
 
-		if(expected_speed < N_SECOND)
+		if(expected_speed > 0 && expected_speed < N_SECOND)
 		{
-			printf("sleeping. expected_speed=%f, 10000.0 - expected_speed=%f\n", expected_speed, 10000.0 - expected_speed);
-			usleep((int)(10000.0 - expected_speed) * 10);
+			int sleeptime = (N_SECOND - expected_speed);
+			usleep(sleeptime);
 		}
 		new_offset = new_offset + result;
 	}
@@ -637,10 +637,6 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
  */
 void * qosfs_init(struct fuse_conn_info * conn)
 {
-	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
-	char param[256];
-	int bytes;
-
 	syslog(LOG_INFO, "init() called");
 
 	return fuse_get_context()->private_data;
@@ -651,7 +647,6 @@ void * qosfs_init(struct fuse_conn_info * conn)
  */
 void qosfs_destroy(void * userdata)
 {
-	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "destroy() called");
 }
 

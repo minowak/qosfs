@@ -4,7 +4,7 @@
 #define PATH_MAX 256
 #define LOG_TAG "QoSFS"
 
-#define N_SECOND 10000
+#define N_SECOND 10000.0
 #define N_PARTS 5
 
 #include "acontroller.h"

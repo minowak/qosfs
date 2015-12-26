@@ -6,11 +6,11 @@
  */
 
 #include "include/params.h"
-#include "include/cgroups.h"
 #include "include/acontroller.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include <fuse.h>
 #include <limits.h>
@@ -429,15 +429,62 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 {
 	int result = 0;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
+	unsigned long read_part = (unsigned long)(size / N_PARTS);
+	unsigned long rest = (unsigned long)(size % N_PARTS);
+	int n = N_PARTS;
+	int i = 0;
 
+	off_t new_offset = offset;
+
+	buf[0] = '\0';
+	
 	LOG_CALL("read");
-	cgroup_classify(data->cgroup_name, fuse_get_context()->pid);
 
-	if((result = pread(ffi->fh, buf, size, offset)) < 0)
+	if(size < N_PARTS)
 	{
-		LOG_ERROR("read");
+		if((result = pread(ffi->fh, buf, size, offset)) < 0)
+		{
+			result = -errno;
+			LOG_ERROR("read");
+			return result;
+		}
+		return result;
 	}
 
+	if(rest > 0) 
+	{	
+		n = n + 1;
+	}
+
+	for(i = 0 ; i < n ; i++)
+	{
+		struct timeval t1, t2;
+		double elapsed_time;
+
+		gettimeofday(&t1, NULL);
+
+		if((result = pread(ffi->fh, buf, size, offset)) < 0)
+		{
+			perror("pread");
+			result = -errno;
+			LOG_ERROR("read");
+			return result;
+		}
+
+		gettimeofday(&t2, NULL);
+		elapsed_time = ((t2.tv_usec - t1.tv_usec) / 1000.0);
+
+		double expected_speed = ((double)(max_read_bytes * elapsed_time) / (double)read_part);
+
+		if(expected_speed < N_SECOND)
+		{
+			printf("sleeping. expected_speed=%f, 10000.0 - expected_speed=%f\n", expected_speed, 10000.0 - expected_speed);
+			usleep((int)(10000.0 - expected_speed) * 10);
+		}
+		new_offset = new_offset + result;
+	}
+	
 	return result;
 }
 
@@ -448,10 +495,8 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
 	int result = 0;
-	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 
 	LOG_CALL("write");
-	cgroup_classify(data->cgroup_name, fuse_get_context()->pid);
 
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
@@ -597,16 +642,6 @@ void * qosfs_init(struct fuse_conn_info * conn)
 	int bytes;
 
 	syslog(LOG_INFO, "init() called");
-	syslog(LOG_INFO, "setting cgroup params: %sMb/s, %sMb/s", data->max_read_bytes, data->max_write_bytes);
-
-	bytes = atoi(data->max_read_bytes);
-	bytes *= 1048576;
-	sprintf(param, "%d:%d %d", conn->proto_major, conn->proto_minor, bytes);
-
-	cgroup_set(data->cgroup_name, CGROUP_RPARAM, param);
-	bytes = atoi(data->max_write_bytes);
-	bytes *= 1048576;
-	cgroup_set(data->cgroup_name, CGROUP_WPARAM, param);
 
 	return fuse_get_context()->private_data;
 }
@@ -618,9 +653,6 @@ void qosfs_destroy(void * userdata)
 {
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "destroy() called");
-	syslog(LOG_INFO, "removing cgroup");
-
-	cgroup_remove(data->cgroup_name);
 }
 
 struct fuse_operations qosfs_operations =
@@ -663,7 +695,6 @@ int main(int argc, char ** argv)
 	int i, fuse_stat;
 	struct qosfs_data * fs_data;
 	char * max_read_bytes, * max_write_bytes;
-	char cgroup_name[256];
 	char device_name[256];
 	pthread_t load_checker;
 
@@ -706,17 +737,9 @@ int main(int argc, char ** argv)
 		abort();
 	}
 
-	sprintf(cgroup_name, "qosfs_%d", getpid());
-
-	syslog(LOG_INFO, "Creating cgroup %s", cgroup_name);
-	cgroup_init();
-	cgroup_create(cgroup_name);
-	cgroup_classify(cgroup_name, getpid());
-
 	get_disk_data(&(fs_data->ac_data));
 
 	fs_data->root_dir = realpath(argv[i], NULL);
-    fs_data->cgroup_name = cgroup_name;
 	fs_data->max_read_bytes = max_read_bytes;
 	fs_data->max_write_bytes = max_write_bytes;
 	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);

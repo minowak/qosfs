@@ -5,7 +5,9 @@
 #define LOG_TAG "QoSFS"
 
 #define N_SECOND 10000.0
-#define N_PARTS 5
+#define N_PARTS 15
+#define RWAIT_PARAM 1
+#define WWAIT_PARAM 1
 
 #include "acontroller.h"
 

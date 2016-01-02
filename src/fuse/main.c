@@ -480,7 +480,7 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 		if(expected_speed > 0 && expected_speed < N_SECOND)
 		{
 			int sleeptime = (N_SECOND - expected_speed);
-			usleep(sleeptime);
+			usleep(sleeptime * RWAIT_PARAM);
 		}
 		new_offset = new_offset + result;
 	}
@@ -495,14 +495,61 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	unsigned long max_write_bytes = atol(data->max_write_bytes) * 1048576;
+	unsigned long write_part = (unsigned long)(size / N_PARTS);
+	unsigned long rest = (unsigned long)(size % N_PARTS);
+	int n = N_PARTS;
+	int i = 0;
+
+	off_t new_offset = offset;
 
 	LOG_CALL("write");
 
-	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
+	if(size < N_PARTS)
 	{
-		LOG_ERROR("write");
+		if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
+		{
+			result = -errno;
+			LOG_ERROR("write");
+			return result;
+		}
+		return result;
 	}
 
+	if(rest > 0) 
+	{	
+		n = n + 1;
+	}
+
+	for(i = 0 ; i < n ; i++)
+	{
+		struct timeval t1, t2;
+		double elapsed_time;
+
+		gettimeofday(&t1, NULL);
+
+		if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
+		{
+			perror("pread");
+			result = -errno;
+			LOG_ERROR("read");
+			return result;
+		}
+
+		gettimeofday(&t2, NULL);
+		elapsed_time = (t2.tv_usec - t1.tv_usec);
+
+		double expected_speed = ((double)(max_write_bytes * elapsed_time) / (double) write_part);
+
+		if(expected_speed > 0 && expected_speed < N_SECOND)
+		{
+			int sleeptime = N_SECOND - expected_speed;
+			usleep(sleeptime * WWAIT_PARAM);
+		}
+		new_offset = new_offset + result;
+	}
+	
 	return result;
 }
 

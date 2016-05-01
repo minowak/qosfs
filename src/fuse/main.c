@@ -475,11 +475,11 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 		gettimeofday(&t2, NULL);
 		elapsed_time = (t2.tv_usec - t1.tv_usec);
 
-		double expected_speed = ((double)(max_read_bytes * elapsed_time) / (double)read_part);
+		double expected_speed = (double)N_SECOND * (double)read_part / elapsed_time;
 
-		if(expected_speed > 0 && expected_speed < N_SECOND)
+		if(expected_speed > max_read_bytes)
 		{
-			int sleeptime = (N_SECOND - expected_speed);
+			int sleeptime = N_SECOND * read_part / max_read_bytes - elapsed_time;
 			usleep(sleeptime);
 		}
 		new_offset = new_offset + result;

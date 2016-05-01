@@ -428,76 +428,29 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
-	int n = 5;//size / 10;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
-	unsigned long read_part = (unsigned long)(size / n);
-	unsigned long rest = (unsigned long)(size % n);
-	//int n = size / 10; //N_PARTS;
-	int i = 0;
-
-	off_t new_offset = offset;
 
 	buf[0] = '\0';
 	
 	LOG_CALL("read");
 
-	if(size < N_PARTS)
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
+	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
-		if((result = pread(ffi->fh, buf, size, offset)) < 0)
-		{
-			result = -errno;
-			LOG_ERROR("read");
-			return result;
-		}
+		result = -errno;
+		perror("pread");
+		LOG_ERROR("read");
 		return result;
 	}
+	gettimeofday(&t2, NULL);
+	double elapsed_time = (t2.tv_usec - t1.tv_usec);
+	double expected_speed = (double)N_SECOND * (double)size / elapsed_time;
 
-	if(rest > 0) 
-	{	
-		n = n + 1;
-	}
-
-	struct timeval all_t1, all_t2;
-	gettimeofday(&all_t1, NULL);
-	for(i = 0 ; i < n ; i++)
+	if(expected_speed * 10 > max_read_bytes)
 	{
-		struct timeval t1, t2;
-		double elapsed_time;
-		char * tmp_buf = (char *)malloc(sizeof(char) * read_part);
-		tmp_buf[0] = '\0';
-
-		gettimeofday(&t1, NULL);
-
-		if((result = pread(ffi->fh, tmp_buf, read_part, new_offset)) < 0)
-		{
-			result = -errno;
-			LOG_ERROR("read");
-			return result;
-		}
-
-		gettimeofday(&t2, NULL);
-		elapsed_time = (t2.tv_usec - t1.tv_usec);
-
-		strcat(buf, tmp_buf);
-		free(tmp_buf);
-
-		double expected_speed = (double)N_SECOND * (double)read_part / elapsed_time;
-
-		if(expected_speed > max_read_bytes)
-		{
-			int sleeptime = N_SECOND * read_part / max_read_bytes - elapsed_time;
-			usleep(sleeptime);
-		}
-		new_offset = new_offset + result;
-	}
-	gettimeofday(&all_t2, NULL);
-	double all_elapsed_time = (all_t2.tv_usec - all_t1.tv_usec);
-	double expected_end_speed = (double)N_SECOND * (double)size / all_elapsed_time;
-
-	if(expected_end_speed * 10 > max_read_bytes)
-	{
-		int sleeptime = N_SECOND * 10 * size / max_read_bytes - all_elapsed_time;
+		int sleeptime = N_SECOND * 100 * size / max_read_bytes - elapsed_time;
 		usleep(sleeptime);
 	}
 	
@@ -511,12 +464,27 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 		struct fuse_file_info * ffi)
 {
 	int result = 0;
+	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	unsigned long max_write_bytes = atol(data->max_write_bytes) * 1048576;
 
 	LOG_CALL("write");
 
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
+		result = -errno;
 		LOG_ERROR("write");
+		return result;
+	}
+	gettimeofday(&t2, NULL);
+	double elapsed_time = (t2.tv_usec - t1.tv_usec);
+	double expected_speed = (double)N_SECOND * (double)size / elapsed_time;
+
+	if(expected_speed * 10 > max_write_bytes)
+	{
+		int sleeptime = N_SECOND * 100 * size / max_write_bytes - elapsed_time;
+		usleep(sleeptime);
 	}
 
 	return result;
@@ -654,6 +622,27 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
 void * qosfs_init(struct fuse_conn_info * conn)
 {
 	syslog(LOG_INFO, "init() called");
+/*	struct qosfs_data * fs_data = (struct qosfs_data *) fuse_get_context()->private_data;
+	
+	{
+		printf("[MAIN] Testing writing...");
+		FILE *fp;
+		char cmd[256];
+		sprintf(cmd, "dd if=/dev/zero of=%s/.test bs=50k count=1024", fs_data->root_dir);
+		if((fp = popen(cmd, "r")) == NULL)
+		{
+			syslog(LOG_ERR, "Writing error");
+		}
+		fclose(fp);
+		printf("OK\n[MAIN] Testing reading...");
+		sprintf(cmd, "dd if=%s/.test of=/dev/null bs=50k count=1024", fs_data->root_dir);
+		if((fp = popen(cmd, "r")) == NULL)
+		{
+			syslog(LOG_ERR, "Reading error");
+		}
+		fclose(fp);
+		printf("OK\n");
+	}*/
 
 	return fuse_get_context()->private_data;
 }

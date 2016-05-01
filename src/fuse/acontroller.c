@@ -69,15 +69,8 @@ void * disk_load_checker(void * dev)
 		
 		read_load = (unsigned int)(read_bytes_increment / 1024);
 		write_load = (unsigned int)(write_bytes_increment / 1024);
-		unsigned int read_kb = read_load;
-		unsigned int write_kb = write_load;
-		
 		pthread_mutex_unlock(&read_mutex);
 		pthread_mutex_unlock(&write_mutex);
-
-#ifdef DEBUG
-		printf("[LC] Current disk load: READ:\t%dkB/s \t| WRITE:\t%dkB/s\n", read_kb, write_kb);
-#endif
 
 		sleep(1);
 		pthread_testcancel();
@@ -102,6 +95,10 @@ int get_current_load(enum load load)
 			pthread_mutex_unlock(&write_mutex);
 			break;
 	}
+
+#ifdef DEBUG
+	printf("[LC] Getting load for %d: %d\n", load, result);
+#endif
 
 	return result;
 }

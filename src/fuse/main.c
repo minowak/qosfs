@@ -428,11 +428,12 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
+	int n = 10;//size / 10;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
-	unsigned long read_part = (unsigned long)(size / N_PARTS);
-	unsigned long rest = (unsigned long)(size % N_PARTS);
-	int n = N_PARTS;
+	unsigned long read_part = (unsigned long)(size / n);
+	unsigned long rest = (unsigned long)(size % n);
+	//int n = size / 10; //N_PARTS;
 	int i = 0;
 
 	off_t new_offset = offset;
@@ -464,9 +465,8 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 
 		gettimeofday(&t1, NULL);
 
-		if((result = pread(ffi->fh, buf, size, offset)) < 0)
+		if((result = pread(ffi->fh, buf, read_part, new_offset)) < 0)
 		{
-			perror("pread");
 			result = -errno;
 			LOG_ERROR("read");
 			return result;

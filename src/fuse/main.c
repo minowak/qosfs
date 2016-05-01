@@ -6,11 +6,11 @@
  */
 
 #include "include/params.h"
-#include "include/cgroups.h"
 #include "include/acontroller.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include <fuse.h>
 #include <limits.h>
@@ -429,15 +429,31 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 {
 	int result = 0;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
 
+	buf[0] = '\0';
+	
 	LOG_CALL("read");
-	cgroup_classify(data->cgroup_name, getpid());
 
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
 	if((result = pread(ffi->fh, buf, size, offset)) < 0)
 	{
+		result = -errno;
+		perror("pread");
 		LOG_ERROR("read");
+		return result;
 	}
+	gettimeofday(&t2, NULL);
+	double elapsed_time = (t2.tv_usec - t1.tv_usec);
+	double expected_speed = (double)N_SECOND * (double)size / elapsed_time;
 
+	if(expected_speed * 10 > max_read_bytes)
+	{
+		int sleeptime = N_SECOND * 100 * size / max_read_bytes - elapsed_time;
+		usleep(sleeptime);
+	}
+	
 	return result;
 }
 
@@ -449,13 +465,26 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 {
 	int result = 0;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
+	unsigned long max_write_bytes = atol(data->max_write_bytes) * 1048576;
 
 	LOG_CALL("write");
-	cgroup_classify(data->cgroup_name, getpid());
 
+	struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
 	if((result = pwrite(ffi->fh, buf, size, offset)) < 0)
 	{
+		result = -errno;
 		LOG_ERROR("write");
+		return result;
+	}
+	gettimeofday(&t2, NULL);
+	double elapsed_time = (t2.tv_usec - t1.tv_usec);
+	double expected_speed = (double)N_SECOND * (double)size / elapsed_time;
+
+	if(expected_speed * 10 > max_write_bytes)
+	{
+		int sleeptime = N_SECOND * 100 * size / max_write_bytes - elapsed_time;
+		usleep(sleeptime);
 	}
 
 	return result;
@@ -592,28 +621,28 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
  */
 void * qosfs_init(struct fuse_conn_info * conn)
 {
-	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
-	char param[256];
-	int bytes;
-	struct stat * stat_buf;
-
 	syslog(LOG_INFO, "init() called");
-	syslog(LOG_INFO, "creating cgroup: %s", data->cgroup_name);
-
-	cgroup_create(data->cgroup_name);
-
-	syslog(LOG_INFO, "setting cgroup params: %sb/s, %sb/s", data->max_read_bytes, data->max_write_bytes);
-
-	bytes = atoi(data->max_read_bytes);
-	stat_buf = (struct stat *) malloc(sizeof(struct stat));
-	stat(data->root_dir, stat_buf);
-	bytes *= 1048576;
-	sprintf(param, "%d:%d %d", major(stat_buf->st_dev), minor(stat_buf->st_rdev), bytes);
-
-	cgroup_set(data->cgroup_name, CGROUP_RPARAM, param);
-	bytes = atoi(data->max_write_bytes);
-	bytes *= 1048576;
-	cgroup_set(data->cgroup_name, CGROUP_WPARAM, param);
+/*	struct qosfs_data * fs_data = (struct qosfs_data *) fuse_get_context()->private_data;
+	
+	{
+		printf("[MAIN] Testing writing...");
+		FILE *fp;
+		char cmd[256];
+		sprintf(cmd, "dd if=/dev/zero of=%s/.test bs=50k count=1024", fs_data->root_dir);
+		if((fp = popen(cmd, "r")) == NULL)
+		{
+			syslog(LOG_ERR, "Writing error");
+		}
+		fclose(fp);
+		printf("OK\n[MAIN] Testing reading...");
+		sprintf(cmd, "dd if=%s/.test of=/dev/null bs=50k count=1024", fs_data->root_dir);
+		if((fp = popen(cmd, "r")) == NULL)
+		{
+			syslog(LOG_ERR, "Reading error");
+		}
+		fclose(fp);
+		printf("OK\n");
+	}*/
 
 	return fuse_get_context()->private_data;
 }
@@ -623,11 +652,7 @@ void * qosfs_init(struct fuse_conn_info * conn)
  */
 void qosfs_destroy(void * userdata)
 {
-	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	syslog(LOG_INFO, "destroy() called");
-	syslog(LOG_INFO, "removing cgroup: %s", data->cgroup_name);
-
-	cgroup_remove(data->cgroup_name);
 }
 
 struct fuse_operations qosfs_operations =
@@ -670,7 +695,6 @@ int main(int argc, char ** argv)
 	int i, fuse_stat;
 	struct qosfs_data * fs_data;
 	char * max_read_bytes, * max_write_bytes;
-	char cgroup_name[256];
 	char device_name[256];
 	pthread_t load_checker;
 
@@ -713,12 +737,9 @@ int main(int argc, char ** argv)
 		abort();
 	}
 
-	sprintf(cgroup_name, "qosfs_%d", getpid());
-
 	get_disk_data(&(fs_data->ac_data));
 
 	fs_data->root_dir = realpath(argv[i], NULL);
-	fs_data->cgroup_name = cgroup_name;
 	fs_data->max_read_bytes = max_read_bytes;
 	fs_data->max_write_bytes = max_write_bytes;
 	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);

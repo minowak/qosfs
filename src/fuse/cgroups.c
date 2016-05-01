@@ -1,71 +1,173 @@
 #include "include/cgroups.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
-int cgroup_create(const char * name)
+char cgroup_mount_point[256];
+
+int cgroup_init()
 {
-	char cmd[256];
-	char uname[256];
-	int result;
+	int result = 0;
+	size_t len = 0;
+	ssize_t read;
+	int found = 0;
+	char * line = NULL;
+	FILE * fp;
 
-	if((result = getlogin_r(uname, sizeof(uname))) < 0)
+	if((fp = fopen("/proc/mounts", "r")) == NULL)
 	{
-		syslog(LOG_ERR, "getlogin_r() failed");
+		result = -errno;
+		syslog(LOG_ERR, "cgroup_init() failed");
+		return result;
 	}
 
-	sprintf(cmd, "cgcreate -a %s:%s -t %s:%s -g %s:%s", uname, uname, uname, uname, CGROUP_CTRL, name);
-	if ((result = system(cmd)) != 0)
+	while(!found && ((read = getline(&line, &len, fp)) != -1))
 	{
-		syslog(LOG_ERR, "cgcreate failed");
+		char * tok = strtok(line, " ");
+		while(!found && tok != NULL)
+		{
+			char suffix[32];
+			sprintf(suffix, "cgroup/%s", CGROUP_CTRL);
+			size_t len_str = strlen(tok);
+			size_t len_suffix = strlen(suffix);
+			if (len_suffix <= len_str)
+			{
+				if(strncmp(tok + len_str - len_suffix, suffix, len_suffix) == 0)
+				{
+					strcpy(cgroup_mount_point, tok);
+					found = 1;
+				}
+			}
+
+			tok = strtok(NULL, " ");
+		}
+
 	}
+
+	fclose(fp);
+	if(line)
+	{
+		free(line);
+	}
+
 #ifdef DEBUG
-	printf("[CG] Created cgroup: %s\n", name);
+	printf("[CG] Cgroups initialized. Mount point: %s\n", cgroup_mount_point);
 #endif
 
 	return result;
 }
 
+int cgroup_create(const char * name)
+{
+    char cgroup_path[256];
+	int result = 0;
+
+	sprintf(cgroup_path, "%s/%s", cgroup_mount_point, name);
+	
+    if(mkdir(cgroup_path, 0777) < 0)
+	{
+		result = -errno;
+		perror("mkdir");
+		printf("%s", cgroup_path);
+		syslog(LOG_ERR, "mkdir() failed");
+		return result;
+	}
+	
+#ifdef DEBUG
+	printf("[CG] Created cgroup: %s\n", name);
+#endif
+	
+	return result;
+}
+
 int cgroup_remove(const char * name)
 {
-	char cmd[256];
-	int result;
+	int result = 0;
+	char cgroup_path[256];
 
-	sprintf(cmd, "cgdelete -g %s:%s", CGROUP_CTRL, name);
-	if ((result = system(cmd)) != 0)
+	sprintf(cgroup_path, "%s/%s", cgroup_mount_point, name);
+
+	if(rmdir(cgroup_path) < 0)
 	{
-		syslog(LOG_ERR, "cgdelete failed");
+		result = -errno;
+		perror("rmdir");
+		syslog(LOG_ERR, "cgroup_remove() failed");
+		return result;
 	}
+
+#ifdef DEBUG
+	printf("[CG] removed control group: %s(%s)\n", name, cgroup_path);
+#endif
 
 	return result;
 }
 
 int cgroup_set(const char * name, const char * param, const char * value)
 {
-	char cmd[256];
-	int result;
+	int result = 0;
+	char cgroup_path[256];
+	FILE *fp;
 
-	sprintf(cmd, "cgset -r %s.%s=\"%s\" %s", CGROUP_CTRL, param, value, name);
-	if ((result = system(cmd)) != 0)
+	sprintf(cgroup_path, "%s/%s/%s.%s", cgroup_mount_point, name, CGROUP_CTRL, param);
+
+	if((fp = fopen(cgroup_path, "w")) == NULL)
 	{
-		syslog(LOG_ERR, "cgset failed");
+		result = -errno;
+		syslog(LOG_ERR, "cgroup_set() failed");
+		return result;
 	}
+
+	if(fputs(value, fp) < 0)
+	{
+		result = -errno;
+		syslog(LOG_ERR, "cgroup_set() failed");
+		fclose(fp);
+		return result;
+	}
+
+	fclose(fp);
+#ifdef DEBUG
+	printf("[CG] Set params for group: %s\n", name);
+#endif
 
 	return result;
 }
 
 int cgroup_classify(const char * name, pid_t pid)
 {
-	char cmd[256];
-	int result;
+	int result = 0;
+	char s_pid[16];
+	char cgroup_path[256];
+	FILE *fp;
 
-	sprintf(cmd, "cgclassify -g %s:%s %d", CGROUP_CTRL, name, pid);
-	if ((result = system(cmd)) != 0)
+	sprintf(cgroup_path, "%s/%s/tasks", cgroup_mount_point, name);
+
+	if((fp = fopen(cgroup_path, "w")) == NULL)
 	{
-		syslog(LOG_ERR, "cgclassify failed");
+		result = -errno;
+		syslog(LOG_ERR, "cgroup_classify()[fopen] failed");
+		return result;
 	}
+
+	sprintf(s_pid, "%d", pid);
+	if(fputs(s_pid, fp) < 0)
+	{
+		result = -errno;
+		syslog(LOG_ERR, "cgroup_classify()[fputs] failed");
+		fclose(fp);
+		return result;
+	}
+	fclose(fp);
+
+#ifdef DEBUG
+	printf("[CG] Classified process with pid: %d\n", pid);
+#endif
 
 	return result;
 }

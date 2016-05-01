@@ -428,7 +428,7 @@ int qosfs_open(const char * path, struct fuse_file_info * ffi)
 int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * ffi)
 {
 	int result = 0;
-	int n = 10;//size / 10;
+	int n = 5;//size / 10;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
 	unsigned long read_part = (unsigned long)(size / n);
@@ -458,14 +458,18 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 		n = n + 1;
 	}
 
+	struct timeval all_t1, all_t2;
+	gettimeofday(&all_t1, NULL);
 	for(i = 0 ; i < n ; i++)
 	{
 		struct timeval t1, t2;
 		double elapsed_time;
+		char * tmp_buf = (char *)malloc(sizeof(char) * read_part);
+		tmp_buf[0] = '\0';
 
 		gettimeofday(&t1, NULL);
 
-		if((result = pread(ffi->fh, buf, read_part, new_offset)) < 0)
+		if((result = pread(ffi->fh, tmp_buf, read_part, new_offset)) < 0)
 		{
 			result = -errno;
 			LOG_ERROR("read");
@@ -475,6 +479,9 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 		gettimeofday(&t2, NULL);
 		elapsed_time = (t2.tv_usec - t1.tv_usec);
 
+		strcat(buf, tmp_buf);
+		free(tmp_buf);
+
 		double expected_speed = (double)N_SECOND * (double)read_part / elapsed_time;
 
 		if(expected_speed > max_read_bytes)
@@ -483,6 +490,15 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 			usleep(sleeptime);
 		}
 		new_offset = new_offset + result;
+	}
+	gettimeofday(&all_t2, NULL);
+	double all_elapsed_time = (all_t2.tv_usec - all_t1.tv_usec);
+	double expected_end_speed = (double)N_SECOND * (double)size / all_elapsed_time;
+
+	if(expected_end_speed * 10 > max_read_bytes)
+	{
+		int sleeptime = N_SECOND * 10 * size / max_read_bytes - all_elapsed_time;
+		usleep(sleeptime);
 	}
 	
 	return result;

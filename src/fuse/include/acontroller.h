@@ -1,22 +1,22 @@
 #ifndef _ACONTROLLER_H_
 #define _ACONTROLLER_H_
 
-enum load 
-{
-	READ,
-	WRITE
-};
-
 struct ac_data
 {
 	unsigned int disk_read_speed;
 	unsigned int disk_write_speed;
 };
 
+enum op_type
+{
+	READ,
+	WRITE
+};
+
 /**
  * Checks if device has available load.
  */
-int check_load_available(struct ac_data, unsigned int bytes, enum load load);
+int check_load_available(struct ac_data, unsigned int bytes, enum op_type load);
 
 /**
  * Returns maximum possible disk read speed (in bytes/s).
@@ -35,7 +35,7 @@ void * disk_load_checker(void * dev);
  * Returns current disk load.
  * @param load load type (read or write).
  */
-int get_current_load(enum load load);
+int get_current_load(enum op_type load);
 
 /**
  * Returns debice name for given path.

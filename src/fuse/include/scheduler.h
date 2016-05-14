@@ -6,7 +6,7 @@
 #include "acontroller.h"
 
 // TODO
-char * high_priority_files[] = {};
+//char * high_priority_files[] = {};
 
 struct rw_operation
 {

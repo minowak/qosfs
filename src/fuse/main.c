@@ -7,6 +7,7 @@
 
 #include "include/params.h"
 #include "include/acontroller.h"
+#include "include/scheduler.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -622,27 +623,6 @@ int qosfs_fgetattr(const char * path, struct stat * statbuf, struct fuse_file_in
 void * qosfs_init(struct fuse_conn_info * conn)
 {
 	syslog(LOG_INFO, "init() called");
-/*	struct qosfs_data * fs_data = (struct qosfs_data *) fuse_get_context()->private_data;
-	
-	{
-		printf("[MAIN] Testing writing...");
-		FILE *fp;
-		char cmd[256];
-		sprintf(cmd, "dd if=/dev/zero of=%s/.test bs=50k count=1024", fs_data->root_dir);
-		if((fp = popen(cmd, "r")) == NULL)
-		{
-			syslog(LOG_ERR, "Writing error");
-		}
-		fclose(fp);
-		printf("OK\n[MAIN] Testing reading...");
-		sprintf(cmd, "dd if=%s/.test of=/dev/null bs=50k count=1024", fs_data->root_dir);
-		if((fp = popen(cmd, "r")) == NULL)
-		{
-			syslog(LOG_ERR, "Reading error");
-		}
-		fclose(fp);
-		printf("OK\n");
-	}*/
 
 	return fuse_get_context()->private_data;
 }
@@ -743,6 +723,9 @@ int main(int argc, char ** argv)
 	fs_data->max_read_bytes = max_read_bytes;
 	fs_data->max_write_bytes = max_write_bytes;
 	syslog(LOG_INFO, "Setting root dir: %s", fs_data->root_dir);
+
+	sc_init(fs_data->ac_data, atol(fs_data->max_read_bytes), atol(fs_data->max_write_bytes));
+	syslog(LOG_INFO, "Scheduler initialized");
 
 	for(; i < argc ; i++)
 	{

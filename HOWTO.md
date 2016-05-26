@@ -5,7 +5,6 @@ Project was tested on _Ubuntu 15.10_ with kernel version 4.2.0-16-generic and
 
 Required libraries:
 * fuse
-* cgroups
 
 CentOS minimal also requires installation of _gcc_
 
@@ -23,18 +22,6 @@ sudo apt-get install fuse libfuse-dev
 ### CentOS
 ```
 yum install fuse-libs fuse-devel
-```
-
-## Cgroups installation
-
-### Ubuntu
-```
-sudo apt-get install cgroup-bin
-```
-
-### CentOS
-```
-yum install libcgroup libcgroup-tools
 ```
 
 ## Getting the code

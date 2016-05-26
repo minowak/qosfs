@@ -2,12 +2,15 @@
 #include "include/params.h"
 #include "include/acontroller.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/time.h>
 
-struct rw_operation operations[N_OPS];
-volatile unsigned long last_index = 0;
+struct rw_operation r_operations[N_OPS];
+struct rw_operation w_operations[N_OPS];
+volatile unsigned long last_index_r = 0;
+volatile unsigned long last_index_w = 0;
 volatile unsigned long op_id = 0;
 pthread_mutex_t last_index_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t id_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -25,23 +28,37 @@ int sc_init(struct ac_data data, unsigned int read, unsigned int write)
 	return 1;
 }
 
-int sc_remove(unsigned int id)
+int sc_remove(unsigned int id, enum op_type type)
 {
 	int i, j;
-	pthread_mutex_lock(&last_index_mutex);
-	for(i = 0 ; i < last_index ; i = i + 1)
+
+	struct rw_operation * operations;
+	volatile unsigned long * last_index;
+	if (type == READ) 
 	{
-		struct rw_operation op = operations[i];
+		operations = r_operations;
+		last_index = &last_index_r;
+	} 
+	else 
+	{
+		operations = w_operations;
+		last_index = &last_index_w;
+	}
+
+	pthread_mutex_lock(&last_index_mutex);
+	for(i = 0 ; i < *last_index ; i = i + 1)
+	{
+		struct rw_operation op = *(operations + i);
 		if(op.id == id)
 		{
 			break;
 		}
 	}
-	for(j = i + 1 ; j < last_index ; j = j + 1)
+	for(j = i + 1 ; j < *last_index ; j = j + 1)
 	{
-		operations[j-1] = operations[j];
+		*(operations + (j-1)) = *(operations + j);
 	}
-	last_index = last_index - 1;
+	*last_index = *last_index - 1;
 	pthread_mutex_unlock(&last_index_mutex);
 
 	return 1;
@@ -54,13 +71,26 @@ void * sc_checker(void * operation)
 	int op_id = op->id;
 	struct timeval t1, t2;
 	double elapsed_time = 0.0;
+	volatile unsigned long * last_index;
+	struct rw_operation * operations;
+
+	if (op->type == READ) 
+	{
+		operations = r_operations;
+		last_index = &last_index_r;
+	}
+	else
+	{
+		operations = w_operations;
+		last_index = &last_index_w;
+	}
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type);
 
 	gettimeofday(&t1, NULL);
 	/* Checking for operation turn */
-	while (1 && last_index > 0) 
+	while (1 && *last_index > 0) 
 	{
 		struct rw_operation first_op = operations[0];
 		if(first_op.id == op_id)
@@ -101,10 +131,50 @@ void * sc_checker(void * operation)
 	return (void *) 1;
 }
 
-int sc_get_priority(char * file)
+int sc_get_priority(const char * path)
 {
-	// TODO based on file types
-	return 1;
+	const char * hp_ext[] = HP_INITIALIZER;
+	const char * mp_ext[] = MP_INITIALIZER;
+
+	const char delimiter[2] = ".";
+	char * token;
+	char * extension;
+	char * file;
+
+	file = (char *)malloc(sizeof(char) * strlen(path));
+	strcpy(file, path);
+
+	token = strtok(file, delimiter);
+
+	while(token != NULL)
+	{
+		extension = (char *)malloc(sizeof(char) * strlen(token));
+		strcpy(extension, token);
+		token = strtok(NULL, delimiter);
+	}
+
+	free(file);
+
+	int i;
+	for (i = 0 ; i < HP_SIZE ; i++)
+	{
+		if (!strcmp(extension, hp_ext[i])) 
+		{
+			return 1;
+		}
+	}
+
+	for (i = 0 ; i < MP_SIZE ; i++)
+	{
+		if (!strcmp(extension, mp_ext[i]))
+		{
+			return 2;
+		}
+	}
+
+	free(extension);
+
+	return 3;
 }
 
 int sc_priority_compare(const void * op_a, const void * op_b)
@@ -128,17 +198,28 @@ int sc_priority_compare(const void * op_a, const void * op_b)
 int sc_recalculate()
 {
 	pthread_mutex_lock(&last_index_mutex);
-	qsort(operations, last_index, sizeof(struct rw_operation), sc_priority_compare);
+	qsort(r_operations, last_index_r, sizeof(struct rw_operation), sc_priority_compare);
+	qsort(w_operations, last_index_w, sizeof(struct rw_operation), sc_priority_compare);
 	pthread_mutex_unlock(&last_index_mutex);
 	return 1;
 }
 
-int sc_wait(enum op_type type, char * file)
+int sc_wait(enum op_type type, const char * file)
 {
 	struct rw_operation operation;
+	volatile unsigned long * last_index;
 
+	if (type == READ)
+	{
+		last_index = &last_index_r;
+	}
+	else
+	{
+		last_index = &last_index_w;
+	}
+	
 	pthread_mutex_lock(&last_index_mutex);
-	last_index = last_index + 1;
+	*last_index = *last_index + 1;
 	pthread_mutex_unlock(&last_index_mutex);
 
 	pthread_mutex_lock(&id_mutex);
@@ -149,7 +230,14 @@ int sc_wait(enum op_type type, char * file)
 	operation.type = type;
 	operation.priority = sc_get_priority(file);
 
-	operations[last_index] = operation;
+	if (type == READ)
+	{
+		r_operations[*last_index] = operation;
+	}
+	else
+	{
+		w_operations[*last_index] = operation;
+	}
     sc_recalculate();
 
 	pthread_t checker;
@@ -158,7 +246,7 @@ int sc_wait(enum op_type type, char * file)
 	pthread_join(checker, NULL);
 
 	/* Delete completed operation from queue */
-	sc_remove(operation.id);
+	sc_remove(operation.id, type);
 
 	return 1;
 }

@@ -65,7 +65,6 @@ int qosfs_readlink(const char * path, char * link, size_t size)
 
 	LOG_CALL("readlink");
 	fullpath(fpath, path);
-
 	if((result = readlink(fpath, link, size - 1)) < 0)
 	{
 		LOG_ERROR("readlink");
@@ -431,10 +430,12 @@ int qosfs_read(const char * path, char * buf, size_t size, off_t offset, struct 
 	int result = 0;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	unsigned long max_read_bytes = atol(data->max_read_bytes) * 1048576;
+	const enum op_type type = READ;
 
 	buf[0] = '\0';
 	
 	LOG_CALL("read");
+	sc_wait(type, path);
 
 	struct timeval t1, t2;
 	gettimeofday(&t1, NULL);
@@ -467,8 +468,10 @@ int qosfs_write(const char * path, const char * buf, size_t size, off_t offset,
 	int result = 0;
 	struct qosfs_data * data = (struct qosfs_data *) fuse_get_context()->private_data;
 	unsigned long max_write_bytes = atol(data->max_write_bytes) * 1048576;
+	const enum op_type type = WRITE;
 
 	LOG_CALL("write");
+	sc_wait(type, path);
 
 	struct timeval t1, t2;
 	gettimeofday(&t1, NULL);

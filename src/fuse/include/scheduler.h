@@ -3,10 +3,12 @@
 
 #define SC_DEADLINE 100.0
 
-#include "acontroller.h"
+#define HP_SIZE 9
+#define MP_SIZE 5
+#define HP_INITIALIZER {"webm", "mkv", "flv", "vob", "ogg", "avi", "mov", "mpg", "mpeg"}
+#define MP_INITIALIZER {"jpg", "tiff", "gif", "png", "bmp"}
 
-// TODO
-//char * high_priority_files[] = {};
+#include "acontroller.h"
 
 struct rw_operation
 {
@@ -16,7 +18,7 @@ struct rw_operation
 };
 
 /* Adds task to IO queue and waits for its turn */
-int sc_wait(enum op_type, char * file);
+int sc_wait(enum op_type, const char * file);
 
 int sc_init(struct ac_data data, unsigned int read, unsigned int write);
 

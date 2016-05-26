@@ -79,7 +79,7 @@ void * disk_load_checker(void * dev)
 	return NULL;
 }
 
-int get_current_load(enum load load)
+int get_current_load(enum op_type load)
 {
 	int result = 0;
 	switch (load)
@@ -103,7 +103,7 @@ int get_current_load(enum load load)
 	return result;
 }
 
-int check_load_available(struct ac_data data, unsigned int bytes, enum load load)
+int check_load_available(struct ac_data data, unsigned int bytes, enum op_type load)
 {
 	int result;
 	unsigned int current_load = get_current_load(load);		

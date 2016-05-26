@@ -7,6 +7,8 @@
 #define N_SECOND 10000.0
 #define N_PARTS 5
 
+#define N_OPS 1024
+
 #include "acontroller.h"
 
 struct qosfs_data

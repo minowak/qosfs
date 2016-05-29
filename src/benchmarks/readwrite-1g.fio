@@ -1,8 +1,0 @@
-[global]
-ioengine=sync
-rw=read
-size=1g
-directory=./testmnt
-thread=1
-
-[test-readwrite-1g]

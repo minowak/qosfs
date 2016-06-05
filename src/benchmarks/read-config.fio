@@ -1,0 +1,15 @@
+[global]
+ioengine=sync
+size=1g
+ramp_time=5
+directory=./testmnt
+thread=1
+runtime=30
+time_based
+
+[read]
+write_bw_log=read_bw
+write_iops_log=read_iops
+write_lat_log=read_lat
+rw=read
+

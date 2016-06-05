@@ -99,14 +99,14 @@ void * sc_checker(void * operation)
 		}
 		gettimeofday(&t2, NULL);
 		elapsed_time = (t2.tv_usec - t1.tv_usec);
-		if(elapsed_time > SC_DEADLINE)
+		if(elapsed_time < 0 || elapsed_time > SC_DEADLINE)
 		{
 			break;
 		}
 	}
 
 	/* Checking for available disk load */
-	while (elapsed_time < SC_DEADLINE)
+	while (elapsed_time > 0 && elapsed_time < SC_DEADLINE)
 	{
 		unsigned long speed = 0;
 		if(op->type == READ)
@@ -238,7 +238,7 @@ int sc_wait(enum op_type type, const char * file)
 	{
 		w_operations[*last_index] = operation;
 	}
-    sc_recalculate();
+        sc_recalculate();
 
 	pthread_t checker;
 	pthread_create(&checker, NULL, &sc_checker, (void *) &operation);

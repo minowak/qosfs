@@ -17,7 +17,6 @@ Written in C using FUSE.
 ## Necessary libraries
 
 * FUSE Development library (libfuse-dev)
-* cgroups (cgroups-bin)
 
 ## Setting up VIM
 

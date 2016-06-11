@@ -253,9 +253,6 @@
 	<g transform="translate(663.4,121.6)" style="stroke:none; fill:black; font-family:Helvetica; font-size:28.00pt; text-anchor:middle">
 		<text><tspan font-size="16.8pt">I/O Latency</tspan><tspan font-size="28.0pt" dy="0.00pt"></tspan></text>
 	</g>
-	<g transform="translate(1249.2,638.8)" style="stroke:none; fill:rgb(0,0,15); font-family:Helvetica; font-size:14.00pt; text-anchor:end">
-		<text><tspan>Data source: http://example.com</tspan></text>
-	</g>
 	<path stroke='black'  d='M546.9,759.0 L546.9,714.9 L779.9,714.9 L779.9,759.0 L546.9,759.0 Z  '/></g>
 	<g id="gnuplot_plot_1" ><title>gnuplot_plot_1</title>
 <g style="fill:none; color:white; stroke:black; stroke-width:2.00; stroke-linecap:butt; stroke-linejoin:miter">

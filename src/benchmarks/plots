@@ -1,0 +1,107 @@
+set terminal pdfcairo font "Gill Sans, 9" linewidth 4 rounded fontscale 1.0
+set style line 80 lt rgb '#808080'
+set style line 81 lt 0
+set style line 81 lt rgb '#808080'
+
+set style line 1 lc rgb '#8b1a0e' pt 1 ps 1 lt 1 lw 2
+set style line 2 lc rgb '#5e9c36' pt 6 ps 1 lt 1 lw 2
+
+set border 3 back linestyle 80
+set tics nomirror
+set style line 12 lc rgb '#808080' lt 0 lw 1
+set grid back linestyle 81
+set xlabel "Czas (sek)"
+set ylabel "Przepustowość (KB/s)"
+set xtics("0" 0, "5" 5000, "10" 10000, "15" 15000, "20" 20000, "25" 25000, "30" 30000)
+set term png
+
+# Unlimited
+set output "Unlimited_bw.png"
+set title "Szybkość transferu danych - Brak limitów"
+plot "results/unlimited/logs/read_bw_bw.log" title 'Odczyt' with lines ls 1, "results/unlimited/logs/write_bw_bw.log" title 'Zapis' with lines ls 2
+replot
+set title "Ilość operacji na sekundę - Brak limitów"
+set xlabel "Czas (sek)"
+set ylabel "IOPS"
+set output "Unlimited_iops.png"
+plot "results/unlimited/logs/read_iops_iops.log" title 'Odczyt' with lines ls 1, "results/unlimited/logs/write_iops_iops.log" title 'Zapis' with lines ls 2
+replot
+set title "Opóźnienie - Brak limitów"
+set xlabel "Czas (sek)"
+set ylabel "Opóźnienie (ms)"
+set output "Unlimited_lat.png"
+plot "results/unlimited/logs/read_lat_lat.log" title 'Odczyt' with lines ls 1, "results/unlimited/logs/write_lat_lat.log" title 'Zapis' with lines ls 2
+replot
+
+# 100MB
+set title "Szybkość transferu danych - Limit 100 MB/s"
+set output "100_bw.png"
+plot "results/100/logs/read_bw_bw.log" title 'Odczyt' with lines ls 1, "results/100/logs/write_bw_bw.log" title 'Zapis' with lines ls 2
+replot
+set title "Ilość operacji na sekundę - Limit 100 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "IOPS"
+set output "100_iops.png"
+plot "results/100/logs/read_iops_iops.log" title 'Odczyt' with lines ls 1, "results/100/logs/write_iops_iops.log" title 'Zapis' with lines ls 2
+replot
+set title "Opóźnienie - Limit 100 MB/s
+set xlabel "Czas (sek)"
+set ylabel "Opóźnienie (ms)"
+set output "100_lat.png"
+plot "results/100/logs/read_lat_lat.log" title 'Odczyt' with lines ls 1, "results/100/logs/write_lat_lat.log" title 'Zapis' with lines ls 2
+replot
+
+# 60MB
+set title "Szybkość transferu danych - Limit 60 MB/s"
+set output "60_bw.png"
+plot "results/60/logs/read_bw_bw.log" title 'Odczyt' with lines ls 1, "results/60/logs/write_bw_bw.log" title 'Zapis' with lines ls 2
+replot
+set title "Ilość operacji na sekundę - Limit 60 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "IOPS"
+set output "60_iops.png"
+plot "results/60/logs/read_iops_iops.log" title 'Odczyt' with lines ls 1, "results/60/logs/write_iops_iops.log" title 'Zapis' with lines ls 2
+replot
+set title "Opóźnienie - Limit 60 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "Opóźnienie (ms)"
+set output "60_lat.png"
+plot "results/60/logs/read_lat_lat.log" title 'Odczyt' with lines ls 1, "results/60/logs/write_lat_lat.log" title 'Zapis' with lines ls 2
+replot
+
+# 20MB
+set title "Szybkość transferu danych - Limit 20 MB/s"
+set output "20_bw.png"
+plot "results/20/logs/read_bw_bw.log" title 'Odczyt' with lines ls 1, "results/20/logs/write_bw_bw.log" title 'Zapis' with lines ls 2
+replot
+set title "Ilość operacji na sekundę - Limit 20 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "IOPS"
+set output "20_iops.png"
+plot "results/20/logs/read_iops_iops.log" title 'Odczyt' with lines ls 1, "results/20/logs/write_iops_iops.log" title 'Zapis' with lines ls 2
+replot
+set title "Opóźnienie - Limit 20 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "Opóźnienie (ms)"
+set output "20_lat.png"
+plot "results/20/logs/read_lat_lat.log" title 'Odczyt' with lines ls 1, "results/20/logs/write_lat_lat.log" title 'Zapis' with lines ls 2
+replot
+
+# 5MB
+set title "Szybkość transferu danych - Limit 5 MB/s"
+set output "5_bw.png"
+plot "results/05/logs/read_bw_bw.log" title 'Odczyt' with lines ls 1, "results/05/logs/write_bw_bw.log" title 'Zapis' with lines ls 2
+replot
+set title "Ilość operacji na sekundę - Limit 5 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "IOPS"
+set output "5_iops.png"
+plot "results/05/logs/read_iops_iops.log" title 'Odczyt' with lines ls 1, "results/05/logs/write_iops_iops.log" title 'Zapis' with lines ls 2
+replot
+set title "Opóźnienie - Limit 5 MB/s"
+set xlabel "Czas (sek)"
+set ylabel "Opóźnienie (ms)"
+set output "5_lat.png"
+plot "results/05/logs/read_lat_lat.log" title 'Odczyt' with lines ls 1, "results/05/logs/write_lat_lat.log" title 'Zapis' with lines ls 2
+replot
+

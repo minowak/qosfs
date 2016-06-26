@@ -1,0 +1,90 @@
+\ProvidesPackage{mastersthesis}
+
+\RequirePackage{fancyhdr}
+\RequirePackage{clrscode}
+\RequirePackage{amsthm}
+
+% potrzebne do obsługi rysunków
+\ifpdf
+	\DeclareGraphicsRule{*}{mps}{*}{}
+\fi
+
+% głębokość numerowania wewnątrz spisu treści
+\setcounter{tocdepth}{2}
+
+% głębokość numerowania sekcji
+\setcounter{secnumdepth}{3}
+
+% odpowiednie wyświetlanie liczników rysunków i tabel
+\def\thefigure{\arabic{figure}}
+\def\thetable{\arabic{table}}
+
+% odpowiedni wygląd nagłówków stron
+\pagestyle{fancyplain}
+\renewcommand{\sectionmark}[1]{\markright{{\bfseries\thechapter.\arabic{section}.}\quad#1}{}}
+\lhead[\fancyplain{}{\small\sffamily\bfseries\thepage}]{\fancyplain{}{\small\sffamily\bfseries\rightmark}}
+\rhead[\fancyplain{}{\small\sffamily\bfseries\leftmark}]{\fancyplain{}{\small\sffamily\bfseries\thepage}}
+\cfoot[]{}
+\addtolength{\headheight}{1.6pt}
+
+% style (s)twierdzeń
+\newtheoremstyle{mtthm}%
+	{\topsep}%
+	{\topsep}%
+	{\itshape}%
+	{}%
+	{\sffamily\bfseries}%
+	{.}%
+	{.5em}%
+	{\thmname{#1}\thmnumber{ #2}\thmnote{ {\mdseries\rmfamily(#3)}}}
+\theoremstyle{mtthm}
+
+% (s)twierdzenie, przypuszczenie, definicja
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{definition}{Definition}[chapter]
+
+% styl przykładów
+\newtheoremstyle{mtxmp}%
+	{\topsep}%
+	{\topsep}%
+	{}%
+	{}%
+	{\sffamily\bfseries}%
+	{.}%
+	{.5em}%
+	{}
+\theoremstyle{mtxmp}
+
+% przykład
+\newtheorem{example}{Example}[chapter]
+
+% środowisko do przykładu automatycznie tworzące symbol qed na końcu
+\newenvironment{Example}%
+	{\begin{example}}%
+	{\hbox{}\hfill$\qed$\end{example}}
+
+% środowisko do list numerowanych, nieco bardziej rozciągnięte niż standardowe
+\newenvironment{Enumerate}%
+	{\vskip5pt\begin{enumerate}\setlength{\itemsep}{5pt}}%
+	{\end{enumerate}\vskip5pt}
+
+% klasy złożoności obliczeniowej
+\newcommand{\Pclass}{\textnormal{P}}
+\newcommand{\NPclass}{\textnormal{NP}}
+\newcommand{\FPclass}{\textnormal{FP}}
+\newcommand{\sharpPclass}{\textnormal{\#P}}
+
+% często używane funkcje
+\newcommand{\score}[1]{\id{score}_{#1}}
+\newcommand{\beaten}[1]{N_{#1}}
+\newcommand{\deficit}[1]{\id{deficit}_{#1}}
+
+% problemy obliczeniowe
+\newcommand{\sharpXthreeC}{\textnormal{\#X3C}}
+\newcommand{\Control}[2]{$\cal E$\textnormal{-\##1${}_\textnormal{#2}$-}\textsc{Control}}
+\newcommand{\PlControl}[2]{{\it Plurality\/}\textnormal{-\##1${}_\textnormal{#2}$-}\textsc{Control}}
+\newcommand{\ApControl}[2]{{\it Approval\/}\textnormal{-\##1${}_\textnormal{#2}$-}\textsc{Control}}
+\newcommand{\CdControl}[2]{{\it Condorcet\/}\textnormal{-\##1${}_\textnormal{#2}$-}\textsc{Control}}
+\newcommand{\MmControl}[2]{{\it Maximin\/}\textnormal{-\##1${}_\textnormal{#2}$-}\textsc{Control}}

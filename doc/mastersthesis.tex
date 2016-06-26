@@ -1,0 +1,116 @@
+\documentclass[man,bazy,a4paper,11pt,sfheadings,noindentfirst]{mgrwms}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{clrscode}
+\usepackage{lmodern}
+\usepackage{tocloft}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{setspace}
+\hypersetup{%
+	pdfauthor={Michał Nowak},%
+	pdftitle={Zarządzanie jakością usług dla pamięci dyskowych},%
+	pdfborder={0 0 0},%
+	pdfkeywords={},%
+	pdfstartview=FitH,%
+	hypertexnames=false%
+}
+\usepackage{mastersthesis}
+\usepackage{algorithmic,algorithm}
+\makeatletter
+\renewcommand{\ALG@name}{Algorytm}
+\renewcommand{\listalgorithmname}{Lista \ALG@name ów}
+\makeatother
+
+\begin{document}
+
+\title{Zarządzanie jakością usług dla pamięci dyskowych}
+\author{Michał Nowak}
+\promotor{dr inż.\ Darin Nikolow}
+\nralbumu{228971}
+\keywords{quality of service, linux, fuse, vfs, file systems, disk storage, \FPclass, \sharpPclass-complete}
+
+\maketitle
+
+\renewcommand{\cfttoctitlefont}{\LARGE\sffamily\bfseries}
+\renewcommand{\cftchapfont}{\sffamily\bfseries}
+\renewcommand{\cftchappagefont}{\sffamily\bfseries}
+\renewcommand{\cftsecfont}{\sffamily}
+\renewcommand{\cftsecleader}{\sffamily\cftdotfill{\cftsecdotsep}}
+\renewcommand{\cftsecpagefont}{\sffamily}
+\setlength{\cftbeforechapskip}{3.75mm}
+
+\tableofcontents
+
+\vskip1in
+
+\include{introduction}
+\include{prototypes}
+\include{implementation}
+\include{experiments}
+\include{summary}
+\bibliographystyle{alpha}
+\begin{thebibliography}{9}
+\bibitem{bourbon}
+Joel C. Wu, Scott A. Brandt\\
+University of California, Santa Cruz\\
+\emph{Providing Quality of Service Support in Object-Based File System}
+
+\bibitem{apollon}
+Taeseok Kim, Youjip Won, Doohan Kim, Kern Koh, and Yong H. Shin\\
+School of Computer Science and Engineering, Seoul National University\\
+Division of Electrical and Computer Engineering, Hanyang University\\
+Dept. of Computer Science and Engineering, Seoul national Univeristy of Technology\\
+\emph{Apollon: File System Level Support for QoS Augmented I/O}
+
+\bibitem{virtualised}
+Felipe Franciosi and William Knottenbelt\\
+Departament of Computing, Imperial College London\\
+\emph{Data Allocation Strategies for the Management of Quality of Service in Virtualised Storage Systems}
+
+\bibitem{towards}
+Felipe Franciosi and William Knottenbelt\\
+\emph{Towards a QoS-aware Virtualised Storage System}
+
+\bibitem{clouds}
+Chien-Min Wang, Tse-Chen Yeh, Guo-Fu Tseng\\
+Institute of Information Science, Academia Sinica, Taipei, Taiwan\\
+\emph{Provision of Storage QoS in Distributed File Systems for Clouds}
+
+\bibitem{zoran}
+Zoran Dimitrijevic, Raju Rangaswami\\
+\emph{Quality of Service Support for Real-time Storage Systems}
+
+\bibitem{stevens}
+W. Richard Stevens\\
+\emph{Advanced Programming in the UNIX Environment (3rd edition)}
+
+\bibitem{man}
+Linux Manual\\
+\emph{http://linux.die.net/man/}
+
+\bibitem{vfs}
+Dokumentacja VFS\\
+\emph{http://tldp.org/LDP/tlk/fs/filesystem.html}
+
+\bibitem{fuse}
+Dokumentacja i przykłady FUSE\\
+\emph{http://fuse.sourceforge.net/doxygen/index.html}
+
+\bibitem{fio}
+Dokumentacja fio\\
+\emph{http://linux.die.net/man/1/fio}
+
+\bibitem{cgroups}
+Dokumentacja cgroups\\
+\emph{http://www.kernel.org/doc/Documentation/cgroups/}
+\end{thebibliography}
+\nocite{*}
+
+\end{document}

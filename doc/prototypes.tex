@@ -1,0 +1,64 @@
+\chapter{Rozważane rozwiązania} \label{ch:prototypes}
+
+\section{Sterowanie przepustowością dysku}\label{throttlingfailures}
+
+Pierwszym problem, jaki należało rozwiązać, był wybór sposobu sterowania
+przepustowością dysku. Na samym początku rozważane było napisanie modułu do kernela, który
+pozwoliłby na bezpośrednie kontrolowanie szybkości transferu danych, ale przewidziane problemy z współbieżnością
+oraz trudności w instalacji i testowaniu spowodowały porzucenie tego rozwiązania.
+
+\subsection{hdparm}
+Pierwszym narzędziem do kontroli przepustowości dysku, jaki testowano było \texttt{hdparm}
+\footnote{https://sourceforge.net/projects/hdparm/}. Narzędzie zostało napisane w 2005 roku przez
+kanadyjczyka Marka Lorda. Używane jest do diagnostyki, testowania oraz dostrajania parametrów dysków.
+
+Warto zaznaczyć, że nierozważne używanie hdparm może spowodować utratę danych i, w najgorszym
+przypadku, fizyczny defekt urządzenia.
+
+Możliwośc uszkodzenia dysku oraz krótkie testy funkcjonalności stwierdziły, że hdparm nie nadaje się do celów tego projektu.
+
+\subsection{ionice}
+Odpowiednikiem linuxowego narzędzia \texttt{nice}\footnote{http://linux.die.net/man/1/nice}
+dla pamieci dyskowych jest \texttt{ionice}\footnote{http://linux.die.net/man/1/ionice}.
+
+Pomimo, iż posiada ono możliwość nadawania priorytetów oraz kontrolowania nimi przepustowości
+nie ma możliwości narzucenia twardych limitów dla szybkości transferu danych, która jest 
+decydująca do osiągnięcia celów niniejszego projektu.
+
+\subsection{cgroups}
+Grupy kontrolne \texttt{cgroups}\footnote{https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt} zapewniają możliwość grupowania procesów oraz nadają im limity wykorzystywania zasobów
+(CPU, pamięć oraz I/O) oraz narzucania im twardych granic. 
+
+Narzędzia cgroups są łatwo dostępne dla większości znanych dystybucji
+systemu Linux oraz posiadają bogatą dokumentację oraz poradniki od \textit{Red Hata}
+\footnote{https://access.redhat.com/documentation/en-US/Red\_Hat\_Enterprise\_Linux/6/html/Resource\_Management\_Guide/ch01.html}
+i \textit{Arch Linuxa}\footnote{https://wiki.archlinux.org/index.php/Cgroups}. 
+Dodatkowo powstała
+również biblioteka - \texttt{libcgroups}, która pozwala na używanie grup
+kontrolnych z poziomu języka C.
+
+Grupami można zarządzać używając dostarczonych narzędzi \ \texttt{cgcreate}, \texttt{cgset}, 
+\texttt{cgexec}, \texttt{cgremove} albo operując bezpośrednio na plikach konfiguracyjnych.
+
+Grupy kontrolne zostały porzucone na rzecz własnej implementacji kontroli przepustowości, ponieważ
+działają one tylko na procesach operujących na fizycznych nośnikach danych i nie działają
+na implementacjach systemów plików opartych na VFS.
+
+\section{Linux I/O scheduler}
+W celu kolejkowania operacji I/O rozważane było użycie jednego z dostępnych schedulerów
+Linuxa\footnote{https://www.kernel.org/doc/Documentation/scheduler/}, a w szczególności
+\texttt{sched-deadline}.
+
+Rozwiązania te jednak nie są możliwe do skonfigurowania w taki sposób, aby możliwe było nadawanie
+różnych priorytetów operacjom w zależności od typu przetwarzanego pliku. Dlatego postanowiono
+stworzyć własny scheduler, operujący w przestrzeni użytkownika.
+
+\section{Extended attributes}\label{sec:xattrs}
+Początkowo rozpatrywana była możliwośc nadawania limitów szybkości transferu danych dla każdego pliku z osobna.
+Do tego celu wykorzystywane były rozszerzone atrybuty - \texttt{xattrs}\footnote{http://linux.die.net/man/2/getxattr}. W chwili obecnej limity ustalane 
+są podczas montowania systemu plików, dlatego porzucono to rozwiązanie.
+
+\section{I-węzły}
+
+Przed rozszerzonymi atrybutami (rozdział \ref{sec:xattrs}) rozważane
+było wykorzystanie i-węzłów do przechowywania limitów szybkości transferu danych.

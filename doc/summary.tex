@@ -1,0 +1,42 @@
+\chapter{Podsumowanie i wnioski} \label{ch:summary}
+
+\section{Wnioski}
+
+Postawione cele zostały osiągnięte. Zaimplementowano system plików z mechanizmem
+QoS, który pozwala na kontrolowanie wykorzystania przepustowości dla
+operacji I/O. Pozwala on na ustalenie minimalnej szybkosci, która w miarę możliwości
+nie zostaje przekroczona.
+
+Pomimo skoków szybkości transferu danych ponad narzucony limit,
+utrzymuje się ona w okolicach wyznaczonych wartości. Skoki te są
+tylko chwilowe i niewielkie (najwyższy rzędu 11\% wartości limitu i 3,6\% przepustowości dysku, nie biorąc pod uwagę
+skoków w 1 sekundzie) i nie zakłócają działania systemu.
+
+Przeanalizowano system pod kątem szybkości transferu, ilości operacji na sekundę
+oraz opóźnienia dysku. QoSFS działa, i może być przydatny w sytuacjach wymagających
+stabilizacji szybkości transferu dla wybranych katalogów lub plików.
+
+\section{Możliwości rozwoju}
+Poniżej przedstawiono kilka przykładowych możliwości rozwoju projektu:
+\ \\
+\begin{enumerate}
+	\item \textbf{Przechowywanie limitów szybkości transferu danych w inodach plików}. Dzięki takiemu zabiegowi możliwe będzie 
+    nadanie osobnych limitów dla każdego pliku, a umieszczenie ich w inodach pozwoli na ich łatwe
+     ustalanie z poziomu użytkownika. FUSE pozwala na tworzenie własnych implementacji
+    inodów.
+    
+    \item \textbf{Zmienny deadline}. Deadline liczony dla każdego pliku w czasie wykonywania
+    operacji I/O. Czas ten może zależeć np. od wielkości lub priorytetu pliku.
+    
+    \item \textbf{Dodatkowe schedulery}. Implementacja dodatkowych schedulerów biorących pod uwagę
+    inne właściwości pliku, na którym wykonywana jest operacja.
+    
+    \item \textbf{Możliwośc ustalenia wykorzystywanej przepustowości}. Na chwilę obecną dostępna przepustowość
+    liczona jest na podstawie różnicy pomiędzy maksymalną możliwą, a aktualnie używaną. 
+    Nadanie tego limitu umożliwi używanie tylko części przepustowości
+    dysku zapewniając zawsze dostępną minimalną szybkość transferu danych dla operacji na innych systemach plików.
+    
+    \item \textbf{Możliwośc przekroczenia ustalonej przepustowości}. Pozwolenie
+    operacjom na przekroczenie narzuconej przepustowości w określonych
+    warunkach jeżeli większa jest dostepna.
+\end{enumerate}

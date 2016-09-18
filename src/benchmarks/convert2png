@@ -1,0 +1,21 @@
+#!/bin/bash
+
+inkscape -z -e results/unlimited/Unlimited-bw.png -w 1280 -h 768 results/unlimited/Unlimited-bw.svg
+inkscape -z -e results/unlimited/Unlimited-lat.png -w 1280 -h 768 results/unlimited/Unlimited-lat.svg
+inkscape -z -e results/unlimited/Unlimited-iops.png -w 1280 -h 768 results/unlimited/Unlimited-iops.svg
+
+inkscape -z -e results/100/100MB-bw.png -w 1280 -h 768 results/100/100MB-bw.svg
+inkscape -z -e results/100/100MB-lat.png -w 1280 -h 768 results/100/100MB-lat.svg
+inkscape -z -e results/100/100MB-iops.png -w 1280 -h 768 results/100/100MB-iops.svg
+
+inkscape -z -e results/60/60MB-bw.png -w 1280 -h 768 results/60/60MB-bw.svg
+inkscape -z -e results/60/60MB-lat.png -w 1280 -h 768 results/60/60MB-lat.svg
+inkscape -z -e results/60/60MB-iops.png -w 1280 -h 768 results/60/60MB-iops.svg
+
+inkscape -z -e results/20/20MB-bw.png -w 1280 -h 768 results/20/20MB-bw.svg
+inkscape -z -e results/20/20MB-lat.png -w 1280 -h 768 results/20/20MB-lat.svg
+inkscape -z -e results/20/20MB-iops.png -w 1280 -h 768 results/20/20MB-iops.svg
+
+inkscape -z -e results/05/5MB-bw.png -w 1280 -h 768 results/05/5MB-bw.svg
+inkscape -z -e results/05/5MB-lat.png -w 1280 -h 768 results/05/5MB-lat.svg
+inkscape -z -e results/05/5MB-iops.png -w 1280 -h 768 results/05/5MB-iops.svg
